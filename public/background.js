@@ -233,7 +233,7 @@ async function handleProductExtractionRequest(message, sendResponse) {
     console.log('Using prompt:', message.prompt.substring(0, 100) + '...');
     
     // server endpoint URL
-    const API_PROXY_URL = 'https://fashiondam.onrender.com';
+    const API_PROXY_URL = 'https://fashiondam.onrender.com/api/extract-product';
     
     try {
       // Make the API request to your proxy server instead of directly to OpenAI
