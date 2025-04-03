@@ -228,50 +228,40 @@ function forwardToAIService(message, sendResponse) {
 
 // Handle OpenAI API requests for product extraction
 async function handleProductExtractionRequest(message, sendResponse) {
-  // Use your actual OpenAI API key here
-  const API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-  const MODEL = 'gpt-3.5-turbo';
-  
   try {
-    console.log('Processing product extraction with OpenAI');
+    console.log('Processing product extraction with OpenAI via proxy');
     console.log('Using prompt:', message.prompt.substring(0, 100) + '...');
     
-    // Use the default key - no need to check storage
+    // server endpoint URL
+    const API_PROXY_URL = 'https://fashiondam.onrender.com';
+    
     try {
-      // Make the API request
-      const response = await fetch(API_ENDPOINT, {
+      // Make the API request to your proxy server instead of directly to OpenAI
+      const response = await fetch(API_PROXY_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant that extracts product information from e-commerce websites.'
-            },
-            {
-              role: 'user',
-              content: message.prompt
-            }
-          ],
-          temperature: 0.3 // Lower temperature for more deterministic results
+          prompt: message.prompt
         })
       });
       
       if (!response.ok) {
         const errorData = await response.json();
         console.error('API error details:', errorData);
-        throw new Error(`OpenAI API Error: ${errorData.error?.message || 'Unknown error'}`);
+        throw new Error(`API Error: ${errorData.error || 'Unknown error'}`);
       }
       
       const data = await response.json();
-      console.log('OpenAI product extraction response received');
+      console.log('Product extraction response received from proxy');
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Unknown error occurred on the proxy server');
+      }
       
       // Process the response to get structured product data
-      const aiResponse = data.choices[0]?.message?.content || '';
+      const aiResponse = data.result || '';
       console.log('AI response preview:', aiResponse.substring(0, 100) + '...');
       
       // Parse the JSON from the AI response
@@ -307,10 +297,10 @@ async function handleProductExtractionRequest(message, sendResponse) {
         });
       }
     } catch (error) {
-      console.error('Error in OpenAI request:', error);
+      console.error('Error in API request:', error);
       sendResponse({
         success: false,
-        error: error.message || 'Failed to process OpenAI request'
+        error: error.message || 'Failed to process API request'
       });
     }
   } catch (error) {
