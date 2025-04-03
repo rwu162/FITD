@@ -1,0 +1,382 @@
+/* styling.css - Main styling for the Virtual Closet extension */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+/* Reset and Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Cormorant Garamond', serif;
+  color: #333;
+  background-color: #f8f9fa;
+  line-height: 1.5;
+}
+
+/* Navbar Styles */
+.navbar {
+  width: 100%;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  position: relative;
+}
+
+.logo {
+  position: absolute;
+  left: 2rem;
+}
+
+.title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: 2rem;
+  letter-spacing: 3px;
+  color: #333;
+}
+
+.nav-container {
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.nav-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  padding: 0.5rem 0;
+}
+
+.nav-links li {
+  margin: 0 1.5rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-links a:hover {
+  color: #a8896c;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: #a8896c;
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after,
+.nav-links .active a::after {
+  width: 100%;
+}
+
+.nav-links .active a {
+  color: #a8896c;
+  font-weight: 500;
+}
+
+.heart a {
+  font-size: 1.3rem;
+}
+
+/* Main Content Area */
+main {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+/* Section Styles */
+section {
+  margin-bottom: 3rem;
+}
+
+section h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+/* Item Grid Styles - Updated for elegance */
+.items-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2rem;
+}
+
+.item-card {
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.item-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.item-image {
+  height: 280px;
+}
+
+.item-details {
+  padding: 1rem;
+  text-align: center;
+}
+
+.item-details h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.item-brand {
+  color: #a8896c;
+  font-style: italic;
+  margin-bottom: 0.3rem;
+}
+
+.item-price {
+  font-weight: 600;
+}
+
+.item-category {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* Outfit Styles */
+.outfits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.outfit-card {
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.outfit-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.outfit-name {
+  text-align: center;
+  padding: 1rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.outfit-name h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.outfit-items-grid {
+  padding: 1rem;
+}
+
+.outfit-footer {
+  padding: 1rem;
+  border-top: 1px solid #f5f5f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Button Styles */
+.primary-button {
+  background-color: #a8896c;
+  color: white;
+  border: none;
+  border-radius: 0;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.primary-button:hover {
+  background-color: #8c7157;
+}
+
+.secondary-button {
+  background-color: white;
+  color: #a8896c;
+  border: 1px solid #a8896c;
+  border-radius: 0;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+  background-color: #f9f6f3;
+}
+
+/* Filter Controls */
+.filter-controls {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-container input,
+.filter-dropdown select {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.search-container input:focus,
+.filter-dropdown select:focus {
+  outline: none;
+  border-color: #a8896c;
+}
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 0;
+}
+
+.modal-header {
+  background-color: #f9f6f3;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.modal-header h3 {
+  font-family: 'Playfair Display', serif;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .top-bar {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .logo {
+    position: static;
+    margin-bottom: 1rem;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+  }
+  
+  .nav-links li {
+    margin: 0.5rem;
+  }
+  
+  .items-grid-container,
+  .outfits-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+  
+  .item-image {
+    height: 200px;
+  }
+}
+
+/* Add these to your styling.css or create a new file */
+#app {
+  width: 100%;
+  max-width: none !important;
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  width: 100%;
+  max-width: 100%;
+  padding: 2rem 5%;
+  margin: 0;
+}
+
+.items-grid-container {
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.filter-controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.search-container {
+  flex: 1;
+  max-width: 70%;
+  margin-right: 1rem;
+}
+
+.search-container input {
+  width: 100%;
+}
+
+/* Make navbar full width */
+.navbar {
+  width: 100%;
+}
+
+/* Ensure content fills width */
+.nav-container, .top-bar {
+  width: 100%;
+}

@@ -1,0 +1,273 @@
+/* tops.css - Advanced styling for category views with sorting and filtering */
+
+/* Two-column layout for item display */
+.category-view-container {
+    display: flex;
+    flex-direction: row;
+    padding: 10px;
+    align-items: flex-start;
+  }
+  
+  .column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 50%;
+    padding: 5px;
+  }
+  
+  .column.left {
+    padding-left: 10%;
+  }
+  
+  .column.right {
+    padding-right: 10%;
+  }
+  
+  .item-container {
+    width: 90%;
+    margin-bottom: 30px;
+  }
+  
+  /* Sort and Filter Controls */
+  .sort-filter-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+  }
+  
+  /* Sort Options */
+  .sort-container {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  
+  .sort-text {
+    font-size: 16px;
+  }
+  
+  .symbol {
+    margin-left: 5px;
+    font-size: 18px;
+  }
+  
+  .sort-options {
+    display: none;
+    position: absolute;
+    margin-top: 5px;
+    top: 100%;
+    left: 0;
+    background-color: white;
+    border: 1px solid #e8e0d8;
+    width: 150px;
+    padding: 10px;
+    z-index: 100;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .sort-options label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .sort-container:hover .sort-options {
+    display: block;
+  }
+  
+  /* Filter Menu */
+  .filter-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: auto;
+    padding-right: 20px;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  
+  .filter-text {
+    font-size: 16px;
+  }
+  
+  .filter-icon {
+    font-size: 18px;
+    margin-left: 5px;
+  }
+  
+  .filter-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 270px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: none;
+    z-index: 1000;
+    margin-top: 5px;
+    border: 1px solid #e8e0d8;
+  }
+  
+  .filter-container:hover .filter-menu {
+    display: block;
+  }
+  
+  .filter-section {
+    margin-bottom: 20px;
+  }
+  
+  .filter-section h4 {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: 'Playfair Display', serif;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f5f5f5;
+    padding-bottom: 5px;
+  }
+  
+  .filter-section label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .filter-section input[type="checkbox"] {
+    margin-right: 8px;
+  }
+  
+  /* Color circles */
+  .color-circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+  }
+  
+  .black { background-color: black; }
+  .white { background-color: white; border: 1px solid #ddd; }
+  .red { background-color: #e74c3c; }
+  .blue { background-color: #3498db; }
+  .pink { background-color: #ffb6c1; }
+  .yellow { background-color: #f1c40f; }
+  .orange { background-color: #e67e22; }
+  .purple { background-color: #9b59b6; }
+  .green { background-color: #2ecc71; }
+  .brown { background-color: #a0522d; }
+  .gray { background-color: #95a5a6; }
+  .beige { background-color: #f5f5dc; }
+  
+  /* Filter buttons */
+  .filter-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+  }
+  
+  .clear-btn,
+  .view-all-btn {
+    width: 45%;
+    padding: 8px;
+    font-size: 14px;
+    font-family: 'Cormorant Garamond', serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .clear-btn {
+    background-color: #f8f8f8;
+    color: #333;
+  }
+  
+  .clear-btn:hover {
+    background-color: #eeeeee;
+  }
+  
+  .view-all-btn {
+    background-color: #a8896c;
+    color: white;
+  }
+  
+  .view-all-btn:hover {
+    background-color: #8c7157;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .category-view-container {
+      flex-direction: column;
+    }
+    
+    .column {
+      width: 100%;
+      padding: 5px 0;
+    }
+    
+    .column.left, .column.right {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    
+    .sort-filter-container {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .filter-container {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+  
+  /* Two-column to one-column grid toggle */
+  .items-grid-container.two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+  
+  /* Custom item display for category view */
+  .category-view .item-card {
+    margin-bottom: 30px;
+  }
+  
+  .category-view .item-image {
+    height: 300px;
+  }
+  
+  .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+  }
+  
+  .filter-tag {
+    background-color: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .filter-tag .remove {
+    margin-left: 5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
