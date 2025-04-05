@@ -9,7 +9,9 @@
       "16": "vite.svg",
       "48": "vite.svg",
       "128": "vite.svg"
-    }
+    },
+    "default_width": 450,
+    "default_height": 320
   },
   "background": {
     "service_worker": "background.js"

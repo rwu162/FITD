@@ -25,6 +25,20 @@ function VirtualClosetFullPage() {
   // Load wardrobe on component mount
   // Load wardrobe on component mount (runs once)
   useEffect(() => {
+    // Check URL parameters for navigation
+    const queryParams = new URLSearchParams(window.location.search);
+    const tabParam = queryParams.get('tab');
+    
+    if (tabParam) {
+      // Set the correct tab based on URL parameter
+      setCurrentTab(tabParam);
+      setActiveTabId(`${tabParam}-tab-menu`);
+      
+      if (tabParam === 'outfit') {
+        // Auto-open the outfit creator if that's the requested tab
+        setShowOutfitCreator(true);
+      }
+    }
     loadWardrobe();
     loadOutfits();
   }, []);
@@ -194,7 +208,7 @@ const handleSortOptionClick = (option) => {
               <span className="sort-text">Sort By</span>
               <span className="sort-icon">▼</span>
             </div>
-            <div className="sort-options">
+            <div className="sort-options expanded">
               <div 
                 className={`sort-option ${sortBy === 'newest' ? 'active' : ''}`}
                 onClick={() => handleSortOptionClick('newest')}
@@ -239,22 +253,7 @@ const handleSortOptionClick = (option) => {
               onChange={handleSearch}
             />
           </div>
-          <div className="filter-dropdown">
-            <select 
-              id="category-filter"
-              value={currentCategory}
-              onChange={(e) => setCurrentCategory(e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              <option value="tops">Tops</option>
-              <option value="bottoms">Bottoms</option>
-              <option value="shoes">Shoes</option>
-              <option value="dresses">Dresses</option>
-              <option value="outerwear">Outerwear</option>
-              <option value="accessories">Accessories</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+          {/* Category dropdown removed */}
         </div>
       </div>
     );

@@ -42,13 +42,15 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Function to open the extension as a full page
-function openFullPage() {
-  // Make sure we use the correct path with extension:// protocol
+function openFullPage(navigateTo = null) {
   const fullPageURL = chrome.runtime.getURL('fullpage.html');
-  console.log('Attempting to open fullpage URL:', fullPageURL);
   
-  // Try to open in a new tab directly
-  chrome.tabs.create({url: fullPageURL}, (tab) => {
+  // If we need to navigate to a specific tab
+  const urlWithParams = navigateTo ? 
+    `${fullPageURL}?tab=${navigateTo}` : 
+    fullPageURL;
+  
+  chrome.tabs.create({url: urlWithParams}, (tab) => {
     if (chrome.runtime.lastError) {
       console.error('Error opening fullpage tab:', chrome.runtime.lastError);
     } else {
@@ -113,10 +115,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Received message in background script:', message.action);
   
   if (message.action === 'openFullPage') {
-    // Open the full page view
-    openFullPage();
+    openFullPage(message.navigateTo); // Pass the navigation parameter
     sendResponse({ success: true });
-  } 
+    return true;
+  }
   else if (message.action === 'getWardrobe') {
     // Get wardrobe data for fullpage or popup
     chrome.storage.local.get('wardrobe', (data) => {
