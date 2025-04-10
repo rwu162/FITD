@@ -12,19 +12,21 @@
 /* Header styles */
 .app-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Center the logo horizontally */
   align-items: center;
-  padding: 20px 15px;
+  padding: 15px 0;
   border-bottom: 1px solid #e0e0e0;
+  width: 100%;
 }
 
 .brand-logo {
-  font-size: 28px;
-  font-weight: bold;
-  color: #c9a86b; /* Gold color from the image */
-  margin: 0;
   font-family: 'Times New Roman', serif;
+  font-size: 32px;
+  margin: 0;
   letter-spacing: 2px;
+  font-weight: bold;
+  color: #000;
+  text-align: center; /* Ensure text is centered within the element */
 }
 
 .header-actions {
@@ -103,4 +105,372 @@
   z-index: 100;
   width: calc(100% - 40px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* FITD Style */
+.fitd-style {
+  width: 400px;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  justify-content: center; /* Center the logo horizontally */
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%;
+}
+
+.brand-logo {
+  font-family: 'Times New Roman', serif;
+  font-size: 32px;
+  margin: 0;
+  letter-spacing: 2px;
+  font-weight: bold;
+  color: #000;
+  text-align: center; /* Ensure text is centered within the element */
+}
+
+/* Main content */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.app-content h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  font-weight: normal;
+}
+
+.app-content p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  color: #333;
+  max-width: 80%;
+}
+
+/* Button style */
+.full-view-button {
+  background-color: #000;
+  color: #fff;
+  border: none;
+  padding: 15px 30px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+  width: auto;
+}
+
+.full-view-button:hover {
+  background-color: #333;
+}
+
+/* Bottom navigation */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid #e0e0e0;
+}
+
+.nav-tab {
+  flex: 1;
+  padding: 15px 0;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #000;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.nav-tab.active {
+  border-top: #A89354;
+}
+
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #A89354; /* Gold underline for active tab */
+}
+
+.nav-tab:not(.active):hover {
+  color: #A89354; /* Gold color on hover */
+  border: none;
+}
+
+.nav-tab:not(.active):hover::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  border: none;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #A89354; /* Gold underline on hover */
+}
+
+/* Hover state */
+.nav-tab:hover {
+  color: #A89354; /* Gold color on hover */
+  border: none;
+}
+
+.nav-tab:hover::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  border: none;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #A89354; /* Gold underline on hover */
+}
+
+/* Add tab specific */
+.add-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Wardrobe tab specific */
+.wardrobe-tab {
+  width: 100%;
+}
+
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  width: 100%;
+}
+
+.wardrobe-item {
+  border: 1px solid #eee;
+  overflow: hidden;
+}
+
+.wardrobe-item .item-image {
+  height: 120px;
+  overflow: hidden;
+}
+
+.wardrobe-item .item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wardrobe-item .item-title {
+  padding: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.more-items {
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+  color: #666;
+}
+
+/* Styler tab specific */
+.styler-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Loading and empty states */
+.loading, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+/* Message styles */
+.message {
+  position: absolute;
+  top: 60px;
+  left: 20px;
+  right: 20px;
+  padding: 10px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 14px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.message.info {
+  background-color: #e8f4fd;
+  color: #0366d6;
+  border: 1px solid #c8e1ff;
+}
+
+.message.error {
+  background-color: #ffebe9;
+  color: #9a2116;
+  border: 1px solid #ffccc7;
+}
+
+.message.success {
+  background-color: #e1f5e9;
+  color: #0a6437;
+  border: 1px solid #c0e5d1;
+}
+
+/* Wardrobe tab styles */
+.wardrobe-tab {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* Controls row with category dropdown and view button */
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 15px;
+}
+
+.category-select select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 0;
+  font-size: 14px;
+  min-width: 150px;
+  background-color: #fff;
+}
+
+.view-in-full-btn {
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  padding: 10px 15px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Wardrobe items section */
+.wardrobe-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+}
+
+.wardrobe-item-card {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+}
+
+.wardrobe-item-card .item-image {
+  width: 45%;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+}
+
+.wardrobe-item-card .item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wardrobe-item-card .item-details {
+  width: 55%;
+  padding: 0 0 0 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wardrobe-item-card .item-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 5px 0;
+}
+
+.wardrobe-item-card .item-brand {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 5px 0;
+}
+
+.wardrobe-item-card .item-price {
+  font-size: 13px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+}
+
+.wardrobe-item-card .view-now-btn {
+  border: none;
+  background: transparent;
+  color: #000;
+  padding: 8px 0;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: auto;
+  border-radius: 0;
+}
+
+/* Update app-content to allow proper overflow in wardrobe tab */
+.app-content {
+  padding: 15px;
+  text-align: left; /* For wardrobe tab content */
+}
+
+.app-content .wardrobe-tab {
+  text-align: left;
+}
+
+/* Keep the centered text for other tabs */
+.add-tab, .styler-tab {
+  text-align: center;
+}
+
+.add-tab p, .styler-tab p {
+  margin: 0 auto 20px;
 }
