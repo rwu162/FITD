@@ -64,8 +64,8 @@ function App() {
   const openOutfitCreator = () => {
     if (typeof chrome !== 'undefined' && chrome.runtime) {
       chrome.runtime.sendMessage({ 
-        action: 'openFullPage',
-        navigateTo: 'outfit'
+        action: 'openOutfitCreator',
+        navigateTo: 'category-selector'  // Make sure this is exactly 'category-selector'
       });
     } else {
       setMessage({ type: 'error', text: 'Full page view is only available in the extension.' });

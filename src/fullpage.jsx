@@ -532,7 +532,7 @@ const handleSortOptionClick = (option) => {
       <nav className="navbar">
         <div className="top-bar">
           <div className="logo">
-            <img src="vite.svg" alt="Virtual Closet Logo" height="50px" />
+            <img src="logo.png" alt="Virtual Closet Logo" height="50px" />
           </div>
           <h1 className="title">WARDROBE</h1>
         </div>

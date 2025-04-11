@@ -10,13 +10,19 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        fullpage: resolve(__dirname, 'fullpage.html')
+        fullpage: resolve(__dirname, 'fullpage.html'),
+        categoryselector: resolve(__dirname, 'category-selector.html')
       },
       output: {
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/[name].js`,
         assetFileNames: `assets/[name].[ext]`
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
     }
   },
   server: {

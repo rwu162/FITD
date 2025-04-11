@@ -6,12 +6,12 @@
   "action": {
     "default_popup": "index.html",
     "default_icon": {
-      "16": "vite.svg",
-      "48": "vite.svg",
-      "128": "vite.svg"
+      "16": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
     },
     "default_width": 450,
-    "default_height": 320
+    "default_height": 350
   },
   "background": {
     "service_worker": "background.js"
@@ -33,6 +33,7 @@
     {
       "resources": [
         "fullpage.html", 
+        "category-selector.html",
         "fullpage-script.js", 
         "ai-outfit-service.js", 
         "ai-product-extractor.js",
@@ -47,8 +48,8 @@
     "<all_urls>"
   ],
   "icons": {
-    "16": "vite.svg",
-    "48": "vite.svg",
-    "128": "vite.svg"
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
   }
 }

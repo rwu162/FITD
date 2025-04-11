@@ -42,19 +42,41 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Function to open the extension as a full page
-function openFullPage(navigateTo = null) {
-  const fullPageURL = chrome.runtime.getURL('fullpage.html');
+function openFullPage(options = {}) {
+  const { navigateTo, selectedCategories } = options;
   
-  // If we need to navigate to a specific tab
-  const urlWithParams = navigateTo ? 
-    `${fullPageURL}?tab=${navigateTo}` : 
-    fullPageURL;
+  console.log('Opening page:', navigateTo, selectedCategories);
   
-  chrome.tabs.create({url: urlWithParams}, (tab) => {
+  let pageURL;
+  let urlParams = new URLSearchParams();
+  
+  // Determine which page to open
+  if (navigateTo === 'category-selector') {
+    pageURL = chrome.runtime.getURL('category-selector.html');
+  } else {
+    pageURL = chrome.runtime.getURL('fullpage.html');
+    
+    // Add tab parameter if specified
+    if (navigateTo) {
+      urlParams.append('tab', navigateTo);
+    }
+    
+    // Add selected categories if provided
+    if (selectedCategories && selectedCategories.length > 0) {
+      urlParams.append('categories', selectedCategories.join(','));
+    }
+  }
+  
+  // Construct full URL with parameters
+  const fullURL = `${pageURL}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+  
+  console.log('Full URL to open:', fullURL);
+  
+  chrome.tabs.create({url: fullURL}, (tab) => {
     if (chrome.runtime.lastError) {
-      console.error('Error opening fullpage tab:', chrome.runtime.lastError);
+      console.error('Error opening page:', chrome.runtime.lastError);
     } else {
-      console.log('Successfully opened fullpage in tab:', tab.id);
+      console.log('Successfully opened page in tab:', tab.id);
     }
   });
 }
@@ -113,6 +135,15 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Listen for messages from the popup or fullpage
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Received message in background script:', message.action);
+
+  if (message.action === 'openOutfitCreator') {
+    console.log('Opening outfit creator with options:', message);
+    openFullPage({
+      navigateTo: message.navigateTo
+    });
+    sendResponse({ success: true });
+    return true;
+  }
   
   if (message.action === 'openFullPage') {
     openFullPage(message.navigateTo); // Pass the navigation parameter
