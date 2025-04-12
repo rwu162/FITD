@@ -47,6 +47,9 @@ const CategorySelector = () => {
 
   // Count items in each category
   const getCategoryCount = (category) => {
+    if (category.toLowerCase() === 'dresses' || category.toLowerCase() === 'dresses/jumpsuits') {
+        return wardrobe.filter(item => item.category === 'dresses').length;
+    }
     return wardrobe.filter(item => item.category === category.toLowerCase()).length;
   };
 

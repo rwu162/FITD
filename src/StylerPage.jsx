@@ -46,8 +46,10 @@ const StylerPage = () => {
       const filtered = {};
       
       selectedCategories.forEach(category => {
+        // Convert category name to lowercase to match the data structure
+        const normalizedCategory = category.toLowerCase();
         filtered[category] = wardrobe.filter(item => 
-          item.category === category.toLowerCase()
+          item.category === normalizedCategory
         );
       });
       
@@ -59,7 +61,7 @@ const StylerPage = () => {
   // Load wardrobe from Chrome storage
   const loadWardrobe = () => {
     setLoading(true);
-    if (chrome.runtime && chrome.runtime.sendMessage) {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ action: 'getWardrobe' }, (response) => {
         if (response && response.success) {
           setWardrobe(response.wardrobe || []);
@@ -73,6 +75,7 @@ const StylerPage = () => {
       console.warn('Chrome runtime not available. Using empty wardrobe for development.');
       setWardrobe([]);
     }
+    setLoading(false);
   };
 
   // Navigate to the next item in a category
@@ -146,7 +149,7 @@ const StylerPage = () => {
       createdAt: new Date().toISOString()
     };
 
-    if (chrome.storage && chrome.storage.local) {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.get(['outfits'], (data) => {
         const existingOutfits = data.outfits || [];
         const updatedOutfits = [...existingOutfits, newOutfit];
@@ -165,7 +168,7 @@ const StylerPage = () => {
 
   // Navigate back to wardrobe
   const goToWardrobe = () => {
-    if (chrome.runtime && chrome.runtime.sendMessage) {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ action: 'openFullPage' });
     } else {
       // For development
@@ -175,7 +178,7 @@ const StylerPage = () => {
 
   // Navigate back to styling (category selection)
   const goToStyling = () => {
-    if (chrome.runtime && chrome.runtime.sendMessage) {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ 
         action: 'openFullPage',
         navigateTo: 'category-selector'
@@ -186,82 +189,132 @@ const StylerPage = () => {
     }
   };
 
+  // Get order of categories (tops first, then bottoms, then shoes)
+  const getOrderedCategories = () => {
+    // Start with the core categories that should always be present
+    const coreCategories = ['tops', 'bottoms', 'shoes'];
+    const orderedCategories = [...coreCategories];
+    
+    // Then add any other selected categories not already included
+    selectedCategories.forEach(category => {
+      if (!orderedCategories.includes(category)) {
+        orderedCategories.push(category);
+      }
+    });
+    
+    return orderedCategories;
+  };
+
   // Render a category row
   const renderCategoryRow = (category) => {
     const items = filteredItems[category] || [];
-    if (items.length === 0) return null;
+    const isEmpty = items.length === 0;
     
-    const currentItem = getCurrentItem(category);
-    const prevItem = getPrevItem(category);
-    const nextItem = getNextItem(category);
-    
-    if (!currentItem) return null;
+    // If there are items in this category
+    if (!isEmpty) {
+      const currentItem = getCurrentItem(category);
+      const prevItemObj = getPrevItem(category);
+      const nextItemObj = getNextItem(category);
+      
+      const hasMultipleItems = items.length > 1;
 
-    const hasMultipleItems = items.length > 1;
+      // Handle navigation functions
+      const handlePrev = () => prevItem(category);
+      const handleNext = () => nextItem(category);
 
-    return (
-      <div className="category-row">
-        <div className="arrow-container left-arrow">
-          {hasMultipleItems && prevItem && (
-            <div className="arrow" onClick={() => prevItem(category)}>
-              &lt;
-            </div>
-          )}
-        </div>
-
-        <div className="items-display">
-          {hasMultipleItems && prevItem && (
-            <div className="side-item left-item">
-              <img 
-                src={prevItem.imageUrl} 
-                alt={prevItem.title || category} 
-                className="item-image side-image"
-                onError={(e) => {
-                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
-                }}
-              />
-            </div>
-          )}
-
-          <div className="center-item">
-            <img 
-              src={currentItem.imageUrl} 
-              alt={currentItem.title || category} 
-              className="item-image center-image"
-              onError={(e) => {
-                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
-              }}
-            />
-            {items.length > 1 && (
-              <div className="lock-icon">
-                🔒
+      return (
+        <div className="category-row">
+          <div className="arrow-container left-arrow">
+            {hasMultipleItems && (
+              <div 
+                className="arrow" 
+                onClick={handlePrev}
+              >
+                &lt;
               </div>
             )}
           </div>
 
-          {hasMultipleItems && nextItem && (
-            <div className="side-item right-item">
+          <div className="items-display">
+            {hasMultipleItems && prevItemObj && (
+              <div className="side-item left-item">
+                <img 
+                  src={prevItemObj.imageUrl} 
+                  alt={prevItemObj.title || category} 
+                  className="item-image side-image"
+                  onError={(e) => {
+                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="center-item">
               <img 
-                src={nextItem.imageUrl} 
-                alt={nextItem.title || category} 
-                className="item-image side-image"
+                src={currentItem.imageUrl} 
+                alt={currentItem.title || category} 
+                className="item-image center-image"
                 onError={(e) => {
                   e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
                 }}
               />
+              {items.length > 1 && (
+                <div className="lock-icon">
+                  🔒
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="arrow-container right-arrow">
-          {hasMultipleItems && nextItem && (
-            <div className="arrow" onClick={() => nextItem(category)}>
-              &gt;
-            </div>
-          )}
+            {hasMultipleItems && nextItemObj && (
+              <div className="side-item right-item">
+                <img 
+                  src={nextItemObj.imageUrl} 
+                  alt={nextItemObj.title || category} 
+                  className="item-image side-image"
+                  onError={(e) => {
+                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="arrow-container right-arrow">
+            {hasMultipleItems && (
+              <div 
+                className="arrow" 
+                onClick={handleNext}
+              >
+                &gt;
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    );
+      );
+    } 
+    // Render empty placeholder for categories without items
+    else {
+      return (
+        <div className="category-row empty-row">
+          <div className="arrow-container left-arrow">
+            <div className="arrow disabled">&lt;</div>
+          </div>
+          
+          <div className="items-display">
+            <div className="center-item empty-item">
+              <div className="empty-item-placeholder">
+                <span className="empty-item-message">No {category} selected</span>
+                <span className="empty-item-subtext">Add some {category} to your wardrobe</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="arrow-container right-arrow">
+            <div className="arrow disabled">&gt;</div>
+          </div>
+        </div>
+      );
+    }
   };
 
   if (loading) {
@@ -273,30 +326,7 @@ const StylerPage = () => {
     );
   }
 
-  // Get order of categories (tops first, then bottoms, then shoes)
-  const orderedCategories = [];
-  
-  // First add tops
-  if (selectedCategories.includes('tops')) {
-    orderedCategories.push('tops');
-  }
-  
-  // Then bottoms
-  if (selectedCategories.includes('bottoms')) {
-    orderedCategories.push('bottoms');
-  }
-  
-  // Then shoes
-  if (selectedCategories.includes('shoes')) {
-    orderedCategories.push('shoes');
-  }
-  
-  // Then any other categories not yet included
-  selectedCategories.forEach(category => {
-    if (!orderedCategories.includes(category)) {
-      orderedCategories.push(category);
-    }
-  });
+  const orderedCategories = getOrderedCategories();
 
   return (
     <div className="improved-styler-page">
@@ -327,9 +357,12 @@ const StylerPage = () => {
           />
         </div>
 
-        <div className="outfit-display">
+        <div className="outfit-display mannequin-layout">
           {orderedCategories.map(category => (
-            <div key={category} className="category-section">
+            <div 
+              key={category} 
+              className={`category-section ${category.toLowerCase()}-section`}
+            >
               {renderCategoryRow(category)}
               <div className="category-divider"></div>
             </div>
