@@ -53,6 +53,13 @@ function openFullPage(options = {}) {
   // Determine which page to open
   if (navigateTo === 'category-selector') {
     pageURL = chrome.runtime.getURL('category-selector.html');
+  } else if (navigateTo === 'styler') {
+    pageURL = chrome.runtime.getURL('styler.html');
+    
+    // Add selected categories if provided
+    if (selectedCategories && selectedCategories.length > 0) {
+      urlParams.append('categories', selectedCategories.join(','));
+    }
   } else {
     pageURL = chrome.runtime.getURL('fullpage.html');
     
@@ -136,6 +143,36 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Received message in background script:', message.action);
 
+  if (message.action === 'openStylerPage') {
+    console.log('Opening styler page with categories:', message.selectedCategories);
+    
+    // Get the styler.html URL
+    const stylerUrl = chrome.runtime.getURL('styler.html');
+    
+    // Add categories parameter if provided
+    let fullUrl = stylerUrl;
+    if (message.selectedCategories && message.selectedCategories.length > 0) {
+      const categoriesParam = message.selectedCategories.join(',');
+      fullUrl = `${stylerUrl}?categories=${categoriesParam}`;
+    }
+    
+    // Open in a new tab
+    chrome.tabs.create({url: fullUrl}, (tab) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error opening styler page:', chrome.runtime.lastError);
+        sendResponse({ 
+          success: false, 
+          error: chrome.runtime.lastError.message 
+        });
+      } else {
+        console.log('Successfully opened styler page in tab:', tab.id);
+        sendResponse({ success: true });
+      }
+    });
+    
+    return true; // Will respond asynchronously
+  }
+  
   if (message.action === 'openOutfitCreator') {
     console.log('Opening outfit creator with options:', message);
     openFullPage({

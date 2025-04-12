@@ -69,16 +69,27 @@ const CategorySelector = () => {
       alert('Please select at least one category');
       return;
     }
-
-    // Navigate to full page outfit creator with selected categories
+  
+    console.log('Selected categories:', selected);
+  
+    // Navigate to the styler page with selected categories
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ 
-        action: 'openFullPage',
-        navigateTo: 'outfit',
+        action: 'openStylerPage', // Changed to a specific action for styler
         selectedCategories: selected
+      }, (response) => {
+        // Log response to debug
+        console.log('Navigation response:', response);
+        
+        if (!response || !response.success) {
+          console.error('Failed to navigate to styler page:', response?.error || 'Unknown error');
+        }
       });
     } else {
       console.warn('Cannot navigate - chrome runtime not available');
+      // For development
+      const categoriesParam = selected.join(',');
+      window.location.href = `/styler.html?categories=${categoriesParam}`;
     }
   };
 

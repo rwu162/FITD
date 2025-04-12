@@ -34,6 +34,7 @@
       "resources": [
         "fullpage.html", 
         "category-selector.html",
+        "styler.html",
         "fullpage-script.js", 
         "ai-outfit-service.js", 
         "ai-product-extractor.js",

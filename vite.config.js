@@ -11,7 +11,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         fullpage: resolve(__dirname, 'fullpage.html'),
-        categoryselector: resolve(__dirname, 'category-selector.html')
+        categoryselector: resolve(__dirname, 'category-selector.html'),
+        styler: resolve(__dirname, 'styler.html')
       },
       output: {
         entryFileNames: `assets/[name].js`,
