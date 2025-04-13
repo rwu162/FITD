@@ -606,9 +606,6 @@ const handleSortOptionClick = (option) => {
         <section id="outfits-view" className={currentTab === 'outfit' ? '' : 'hidden'}>
           <div className="outfits-header">
             <h2>Your Outfits</h2>
-            <button id="create-outfit-btn" className="primary-button" onClick={startOutfitCreation}>
-              Create New Outfit
-            </button>
           </div>
           
           <div id="outfits-container">

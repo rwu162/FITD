@@ -80,6 +80,70 @@ app.get('/', (req, res) => {
   res.send('OpenAI API Proxy Server is running');
 });
 
+app.post('/api/generate-outfit', async (req, res) => {
+  try {
+    // Get the prompt from the request
+    const { prompt } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt is required'
+      });
+    }
+    
+    // Your API key is securely stored in environment variables
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({ 
+        success: false, 
+        error: 'API key not configured on the server' 
+      });
+    }
+    
+    // Forward the request to OpenAI
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional fashion stylist who creates outfit recommendations based on available wardrobe items.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        }
+      }
+    );
+    
+    // Return the OpenAI response to the client
+    return res.json({
+      success: true,
+      result: response.data.choices[0]?.message?.content || ''
+    });
+    
+  } catch (error) {
+    console.error('Error in outfit generation:', error);
+    
+    // Return error details
+    return res.status(500).json({
+      success: false,
+      error: error.response?.data?.error?.message || error.message || 'Unknown error'
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -172,7 +172,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     return true; // Will respond asynchronously
   }
-  
+
   if (message.action === 'openOutfitCreator') {
     console.log('Opening outfit creator with options:', message);
     openFullPage({
@@ -274,26 +274,268 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Forward a message to the AI service
 function forwardToAIService(message, sendResponse) {
   try {
-    // The AI service is loaded as a separate script
-    // We'll just forward the message to it
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error('Error forwarding to AI service:', chrome.runtime.lastError);
-        sendResponse({ 
-          success: false, 
-          error: chrome.runtime.lastError.message || 'Could not communicate with AI service'
+    console.log('Attempting to generate outfit with AI:', message);
+    
+    // Process the request directly in the background script
+    // This avoids the message passing issues
+    const wardrobeItems = message.wardrobe || [];
+    const userPrompt = message.options?.userPrompt || "Create a casual everyday outfit";
+    
+    // Initialize a fallback outfit in case AI processing fails
+    let fallbackOutfit = createFallbackOutfit(wardrobeItems);
+    
+    // Try to use the AI service loaded as content script
+    if (typeof aiOutfitService !== 'undefined') {
+      // Use the service instance directly
+      aiOutfitService.generateOutfit(wardrobeItems, {
+        userPrompt: userPrompt
+      }).then(result => {
+        console.log('AI outfit generation successful:', result);
+        sendResponse(result);
+      }).catch(error => {
+        console.error('Error in AI outfit generation:', error);
+        sendResponse({
+          success: true, // Return success with fallback
+          outfit: fallbackOutfit,
+          message: 'Used fallback outfit generator. ' + error.message
         });
-      } else {
-        sendResponse(response);
-      }
-    });
+      });
+    } else {
+      // If aiOutfitService is not available directly, try making a POST request to the backend
+      fetch('https://fashiondam.onrender.com/api/generate-outfit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: constructPromptFromUserInput(wardrobeItems, userPrompt),
+          wardrobe: wardrobeItems
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          // Parse the server response
+          const outfit = parseOutfitResponse(data.result, {
+            tops: wardrobeItems.filter(item => item.category === 'tops'),
+            bottoms: wardrobeItems.filter(item => item.category === 'bottoms'),
+            shoes: wardrobeItems.filter(item => item.category === 'shoes'),
+            outerwear: wardrobeItems.filter(item => item.category === 'outerwear'),
+            dresses: wardrobeItems.filter(item => item.category === 'dresses'),
+            accessories: wardrobeItems.filter(item => item.category === 'accessories')
+          });
+          
+          sendResponse({
+            success: true,
+            outfit: outfit
+          });
+        } else {
+          throw new Error(data.error || 'Unknown server error');
+        }
+      })
+      .catch(error => {
+        console.error('Error in server fetch:', error);
+        sendResponse({
+          success: true, // Return success with fallback
+          outfit: fallbackOutfit,
+          message: 'Used fallback outfit generator. ' + error.message
+        });
+      });
+    }
+    
+    return true; // Indicates we'll respond asynchronously
   } catch (error) {
     console.error('Error in forwardToAIService:', error);
-    sendResponse({ 
-      success: false, 
-      error: error.message || 'Unknown error in AI service communication'
+    
+    // Create a fallback outfit with basic logic
+    const fallbackOutfit = createFallbackOutfit(message.wardrobe || []);
+    
+    // Return a successful response with the fallback outfit
+    sendResponse({
+      success: true,
+      outfit: fallbackOutfit,
+      message: 'Used fallback outfit generator due to error: ' + error.message
     });
   }
+}
+
+// Helper function to create a fallback outfit when AI fails
+function createFallbackOutfit(wardrobeItems) {
+  console.log('Creating fallback outfit from', wardrobeItems.length, 'items');
+  
+  // Extract categories
+  const tops = wardrobeItems.filter(item => item.category === 'tops');
+  const bottoms = wardrobeItems.filter(item => item.category === 'bottoms');
+  const shoes = wardrobeItems.filter(item => item.category === 'shoes');
+  const dresses = wardrobeItems.filter(item => item.category === 'dresses');
+  const accessories = wardrobeItems.filter(item => item.category === 'accessories');
+  
+  // Randomly select one item from each category
+  const selectedTop = tops.length > 0 ? tops[Math.floor(Math.random() * tops.length)] : null;
+  const selectedBottom = bottoms.length > 0 ? bottoms[Math.floor(Math.random() * bottoms.length)] : null;
+  const selectedShoes = shoes.length > 0 ? shoes[Math.floor(Math.random() * shoes.length)] : null;
+  const selectedDress = dresses.length > 0 ? dresses[Math.floor(Math.random() * dresses.length)] : null;
+  const selectedAccessory = accessories.length > 0 ? accessories[Math.floor(Math.random() * accessories.length)] : null;
+  
+  // Create the outfit object
+  const outfit = {};
+  
+  // If we have a dress, use it as the foundation
+  if (selectedDress) {
+    outfit.dresses = selectedDress;
+    outfit.shoes = selectedShoes;
+    outfit.accessories = selectedAccessory;
+  } else {
+    // Otherwise use tops and bottoms
+    outfit.tops = selectedTop;
+    outfit.bottoms = selectedBottom;
+    outfit.shoes = selectedShoes;
+    outfit.accessories = selectedAccessory;
+  }
+  
+  return {
+    items: outfit,
+    reasoning: 'This is a simple outfit based on your wardrobe items.',
+    name: 'AI Generated Outfit'
+  };
+}
+
+// Helper function to construct a prompt from user input
+function constructPromptFromUserInput(wardrobeItems, userPrompt) {
+  // Extract categories from wardrobe
+  const tops = wardrobeItems.filter(item => item.category === 'tops');
+  const bottoms = wardrobeItems.filter(item => item.category === 'bottoms');
+  const shoes = wardrobeItems.filter(item => item.category === 'shoes');
+  const outerwear = wardrobeItems.filter(item => item.category === 'outerwear');
+  const dresses = wardrobeItems.filter(item => item.category === 'dresses');
+  const accessories = wardrobeItems.filter(item => item.category === 'accessories');
+  
+  // Create a simplified view of each item
+  const simplifyItem = (item) => ({
+    id: item.addedAt,
+    title: item.title || 'Unnamed item',
+    brand: item.brand || '',
+    color: extractColorFromTitle(item.title) || 'unknown',
+    description: item.description ? item.description.substring(0, 100) : ''
+  });
+  
+  // Include all available categories
+  const allItems = {
+    tops: tops.length > 0 ? tops.map(simplifyItem) : [],
+    bottoms: bottoms.length > 0 ? bottoms.map(simplifyItem) : [],
+    shoes: shoes.length > 0 ? shoes.map(simplifyItem) : [],
+    outerwear: outerwear.length > 0 ? outerwear.map(simplifyItem) : [],
+    dresses: dresses.length > 0 ? dresses.map(simplifyItem) : [],
+    accessories: accessories.length > 0 ? accessories.map(simplifyItem) : []
+  };
+  
+  // Filter out empty categories
+  const itemsToInclude = {};
+  Object.entries(allItems).forEach(([category, items]) => {
+    if (items.length > 0) {
+      itemsToInclude[category] = items;
+    }
+  });
+  
+  // Create the prompt with user's input
+  let prompt = `You are a professional fashion stylist. ${userPrompt}. Create an outfit from the following wardrobe items that meets this request. Select the best matching items that coordinate well together.\n\n`;
+  
+  // Add items by category
+  Object.entries(itemsToInclude).forEach(([category, items]) => {
+    prompt += `${category.toUpperCase()} (select 0-1):\n`;
+    items.forEach((item, index) => {
+      prompt += `${index + 1}. ${item.title} (${item.brand}) - ID: ${item.id}\n`;
+    });
+    prompt += '\n';
+  });
+  
+  // Add instructions for the response format
+  prompt += `Select appropriate items to create a cohesive outfit that matches the request. You can select 0 or 1 item from each category. Respond in JSON format like this:
+{
+  "outfit": {
+    ${Object.keys(itemsToInclude).map(cat => `"${cat}": "ID_OF_SELECTED_ITEM_OR_NULL"`).join(',\n    ')}
+  },
+  "reasoning": "Brief explanation of why these items work well together and how they fulfill the request"
+}`;
+  
+  return prompt;
+}
+
+// Helper function to extract color from item title
+function extractColorFromTitle(text) {
+  if (!text) return null;
+  
+  const commonColors = [
+    'red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink', 'black', 
+    'white', 'gray', 'grey', 'brown', 'navy', 'beige', 'maroon', 'teal', 'olive',
+    'turquoise', 'lavender', 'cream', 'tan', 'khaki'
+  ];
+  
+  // Convert to lowercase and search for color names
+  const lowerText = text.toLowerCase();
+  for (const color of commonColors) {
+    if (lowerText.includes(color)) {
+      return color;
+    }
+  }
+  
+  return null;
+}
+
+// Helper function to parse the OpenAI response
+function parseOutfitResponse(responseText, itemsByCategory) {
+  try {
+    // Find JSON in the response
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Could not find JSON in the response');
+    }
+    
+    const jsonStr = jsonMatch[0];
+    const outfitData = JSON.parse(jsonStr);
+    
+    // Validate the outfit data
+    if (!outfitData.outfit) {
+      throw new Error('Invalid outfit data structure');
+    }
+    
+    // Convert IDs to actual items
+    const outfit = {};
+    const categories = Object.keys(outfitData.outfit);
+    
+    for (const category of categories) {
+      const itemId = outfitData.outfit[category];
+      const items = itemsByCategory[category] || [];
+      
+      // Find the item with matching ID
+      const matchedItem = items.find(item => item.addedAt === itemId);
+      
+      if (matchedItem) {
+        outfit[category] = matchedItem;
+      }
+    }
+    
+    return {
+      items: outfit,
+      reasoning: outfitData.reasoning || 'These items complement each other well.',
+      name: `AI Generated ${capitalizeFirst(outfitData.occasion || 'Outfit')}`
+    };
+    
+  } catch (error) {
+    console.error('Error parsing outfit response:', error);
+    throw error;
+  }
+}
+
+// Helper to capitalize first letter
+function capitalizeFirst(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Handle OpenAI API requests for product extraction

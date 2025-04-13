@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './styler-page.css';
+import AIChat from './AIChat';
 
 const StylerPage = () => {
   // State for storing the selected categories from URL parameters
@@ -189,6 +190,44 @@ const StylerPage = () => {
       alert('Outfit saved successfully! (Development mode)');
       setOutfits([...outfits, newOutfit]);
     }
+  };
+
+  // Handle AI-generated outfit
+  const handleOutfitGenerated = (outfit) => {
+    if (!outfit || !outfit.items) return;
+    
+    // Set outfit name from the AI suggestion
+    if (outfit.name) {
+      setOutfitName(outfit.name);
+    }
+    
+    // Update the displayed items based on AI selection
+    const newIndices = { ...currentIndices };
+    
+    // Process each category in the outfit
+    Object.entries(outfit.items).forEach(([category, item]) => {
+      if (!item) return;
+      
+      // Find the category in selected categories (accounting for naming differences)
+      let matchedCategory = selectedCategories.find(
+        cat => cat.toLowerCase() === category.toLowerCase() || 
+               (cat.toLowerCase() === 'dresses/jumpsuits' && category.toLowerCase() === 'dresses')
+      );
+      
+      if (!matchedCategory) return;
+      
+      // Find the item in the filtered items
+      const itemList = filteredItems[matchedCategory];
+      if (!itemList) return;
+      
+      const itemIndex = itemList.findIndex(i => i.addedAt === item.addedAt);
+      if (itemIndex !== -1) {
+        newIndices[matchedCategory] = itemIndex;
+      }
+    });
+    
+    // Update all indices at once
+    setCurrentIndices(newIndices);
   };
 
   // Navigate back to wardrobe
@@ -406,6 +445,13 @@ const StylerPage = () => {
             ADD TO WARDROBE
           </button>
         </div>
+        
+        {/* AI Chat Component */}
+        <AIChat 
+            onOutfitGenerated={handleOutfitGenerated}
+            wardrobe={wardrobe}
+            selectedCategories={selectedCategories}
+        />
       </main>
     </div>
   );

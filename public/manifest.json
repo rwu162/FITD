@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Virtual Closet",
+  "name": "FITD",
   "version": "1.0",
   "description": "A smart wardrobe extension that helps you create outfits from your favorite clothing items.",
   "action": {
