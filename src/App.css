@@ -173,6 +173,7 @@
   cursor: pointer;
   margin-top: 20px;
   width: auto;
+  border-radius: 0;
 }
 
 .full-view-button:hover {

@@ -14,7 +14,7 @@ html, body {
     width: 100vw;
   }
   
-  /* Improved Styler Page Styles */
+  /* Main page container */
   .improved-styler-page {
     display: flex;
     flex-direction: column;
@@ -28,205 +28,95 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
     background-color: white;
+    box-shadow: none;
+    padding: 15px 20px;
+    height: 40px;
   }
   
   .logo-container {
-    width: 50px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    width: 30px;
+    height: 30px;
   }
   
   .logo {
     max-width: 100%;
-    max-height: 100%;
-    width: auto;
     height: auto;
-    object-fit: contain;
   }
   
   .nav-links {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    gap: 20px;
   }
   
   .nav-link {
-    color: black;
+    color: #000;
     text-decoration: none;
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
   
-  .nav-link:hover {
-    text-decoration: underline;
-  }
-  
-  /* Main Content Styles */
+  /* Main Content Area */
   .styler-content {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem 2rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
+    padding: 20px 20px 40px;
   }
   
-  /* Outfit Name Input */
+  /* Outfit name input */
   .outfit-name-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
+    margin-bottom: 40px;
   }
   
   .outfit-name-input {
     width: 180px;
-    height: 40px;
+    height: 36px;
     border: 1px solid #ccc;
-    padding: 0 1rem;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
     text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.9rem;
   }
   
-  /* Outfit Display with Mannequin Layout */
+  /* Outfit display grid layout */
   .outfit-display {
-    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-  .mannequin-layout {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  /* Specific styling for each category section */
-  .tops-section {
-    order: 1; /* Tops appear first */
     width: 100%;
-    max-width: 800px;
-  }
-  
-  .bottoms-section {
-    order: 2; /* Bottoms appear second */
-    width: 100%;
-    max-width: 800px;
-  }
-  
-  .shoes-section {
-    order: 3; /* Shoes appear third */
-    width: 100%;
-    max-width: 800px;
-  }
-  
-  /* Any other categories appear after */
-  .accessories-section,
-  .outerwear-section,
-  .dresses-section {
-    order: 4;
-    width: 100%;
-    max-width: 800px;
+    max-width: 1000px;
   }
   
   .category-section {
-    margin-bottom: 1.5rem;
-    width: 100%;
+    margin-bottom: 40px;
   }
   
   .category-row {
     display: flex;
-    align-items: center;
     justify-content: center;
-    height: 220px;
+    align-items: center;
     position: relative;
   }
   
-  .arrow-container {
-    width: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    z-index: 10;
-  }
-  
-  .arrow {
-    cursor: pointer;
-    font-size: 1.5rem;
-    padding: 0.5rem;
-    user-select: none;
-    transition: transform 0.2s ease;
-  }
-  
-  .arrow:hover {
-    transform: scale(1.2);
-    color: #a8896c;
-  }
-  
-  .left-arrow .arrow {
-    margin-right: -10px;
-  }
-  
-  .right-arrow .arrow {
-    margin-left: -10px;
-  }
-  
+  /* Item containers with styled borders */
   .items-display {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 900px;
+  }
+  
+  .center-item, .side-item {
     position: relative;
-    height: 100%;
-  }
-  
-  .center-item {
-    position: relative;
-    width: 220px;
-    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-    z-index: 2;
-    padding: 10px;
-  }
-  
-  .side-item {
-    width: 180px;
-    height: 80%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: white;
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-    padding: 5px;
-  }
-  
-  .side-item:hover {
-    opacity: 0.9;
-  }
-  
-  .left-item {
-    margin-right: -20px;
-    z-index: 1;
-  }
-  
-  .right-item {
-    margin-left: -20px;
-    z-index: 1;
+    height: 260px;
+    background-color: transparent;
+    padding-bottom: 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
   }
   
   .item-image {
@@ -235,500 +125,187 @@ html, body {
     object-fit: contain;
   }
   
-  .center-image {
-    max-width: 100%;
-    max-height: 100%;
+  /* Arrow navigation */
+  .arrow-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    z-index: 10;
   }
   
-  .side-image {
-    max-width: 90%;
-    max-height: 90%;
+  .arrow {
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #999;
   }
   
+  /* Lock icon styling */
   .lock-icon {
     position: absolute;
     top: 10px;
     right: 10px;
-    font-size: 1rem;
-    color: #888;
-    z-index: 3;
-  }
-  
-  .category-divider {
-    width: 100%;
-    height: 1px;
-    background-color: #eee;
-    margin-top: 1rem;
-  }
-  
-  /* Outfit Actions */
-  .outfit-actions {
-    margin-top: 2rem;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-  
-  .save-outfit-button {
-    background-color: black;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    cursor: pointer;
-    width: 200px;
-    text-transform: uppercase;
-  }
-  
-  .save-outfit-button:hover {
-    background-color: #333;
-  }
-  
-  /* Loading State */
-  .styler-page.loading {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
-  
-  .loading-spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     border-radius: 50%;
-    border-top: 4px solid black;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 768px) {
-    .styler-header {
-      padding: 1rem;
-    }
-    
-    .styler-content {
-      padding: 1rem;
-    }
-    
-    .category-row {
-      height: 180px;
-    }
-    
-    .center-item {
-      width: 180px;
-    }
-    
-    .side-item {
-      width: 140px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .side-item {
-      display: none;
-    }
-    
-    .arrow-container {
-      width: 40px;
-    }
-  }
-
-  /* Responsive Adjustments */
-@media (max-width: 768px) {
-    .styler-header {
-      padding: 1rem;
-    }
-    
-    .styler-content {
-      padding: 1rem;
-    }
-    
-    .category-row {
-      height: 180px;
-    }
-    
-    .center-item {
-      width: 180px;
-    }
-    
-    .side-item {
-      width: 140px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .side-item {
-      display: none;
-    }
-    
-    .arrow-container {
-      width: 40px;
-    }
-  }/* Styler Page Styles */
-  
-  /* Ensure full screen layout */
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-    overflow-x: hidden;
-  }
-  
-  #root {
-    height: 100vh;
-    width: 100vw;
-  }
-  
-  /* Improved Styler Page Styles */
-  .improved-styler-page {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    background-color: white;
-    font-family: 'Cormorant Garamond', serif;
-  }
-  
-  /* Header Styles */
-  .styler-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background-color: white;
-  }
-  
-  .logo-container {
-    width: 50px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  
-  .logo {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-  }
-  
-  .nav-links {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  
-  .nav-link {
-    color: black;
-    text-decoration: none;
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .nav-link:hover {
-    text-decoration: underline;
-  }
-  
-  /* Main Content Styles */
-  .styler-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1rem 2rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-  }
-  
-  /* Outfit Name Input */
-  .outfit-name-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-  }
-  
-  .outfit-name-input {
-    width: 180px;
-    height: 40px;
-    border: 1px solid #ccc;
-    padding: 0 1rem;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
-    text-align: center;
-  }
-  
-  /* Outfit Display with Mannequin Layout */
-  .outfit-display {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  
-  .mannequin-layout {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  /* Specific styling for each category section */
-  .tops-section {
-    order: 1; /* Tops appear first */
-    width: 100%;
-    max-width: 800px;
-  }
-  
-  .bottoms-section {
-    order: 2; /* Bottoms appear second */
-    width: 100%;
-    max-width: 800px;
-  }
-  
-  .shoes-section {
-    order: 3; /* Shoes appear third */
-    width: 100%;
-    max-width: 800px;
-  }
-  
-  /* Any other categories appear after */
-  .accessories-section,
-  .outerwear-section,
-  .dresses-section {
-    order: 4;
-    width: 100%;
-    max-width: 800px;
-  }
-  
-  .category-section {
-    margin-bottom: 1.5rem;
-    width: 100%;
-  }
-  
-  .category-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 220px;
-    position: relative;
-  }
-  
-  .arrow-container {
-    width: 40px;
+    width: 24px;
+    height: 24px;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%;
-    z-index: 10;
+    font-size: 12px;
   }
   
-  .arrow {
-    cursor: pointer;
-    font-size: 1.5rem;
-    padding: 0.5rem;
-    user-select: none;
-    transition: transform 0.2s ease;
-  }
-  
-  .arrow:hover {
-    transform: scale(1.2);
-    color: #a8896c;
-  }
-  
-  .left-arrow .arrow {
-    margin-right: -10px;
-  }
-  
-  .right-arrow .arrow {
-    margin-left: -10px;
-  }
-  
-  .items-display {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    height: 100%;
-  }
-  
-  .center-item {
-    position: relative;
-    width: 220px;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-    z-index: 2;
-    padding: 10px;
-  }
-  
-  .side-item {
-    width: 180px;
-    height: 80%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: white;
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
-    padding: 5px;
-  }
-  
-  .side-item:hover {
-    opacity: 0.9;
-  }
-  
-  .left-item {
-    margin-right: -20px;
-    z-index: 1;
-  }
-  
-  .right-item {
-    margin-left: -20px;
-    z-index: 1;
-  }
-  
-  .item-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  
-  .center-image {
-    max-width: 100%;
-    max-height: 100%;
-  }
-  
-  .side-image {
-    max-width: 90%;
-    max-height: 90%;
-  }
-  
-  .lock-icon {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 1rem;
-    color: #888;
-    z-index: 3;
-  }
-  
-  .category-divider {
-    width: 100%;
-    height: 1px;
-    background-color: #eee;
-    margin-top: 1rem;
-  }
-  
-  /* Outfit Actions */
-  .outfit-actions {
-    margin-top: 2rem;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-  
-  .save-outfit-button {
-    background-color: black;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    cursor: pointer;
-    width: 200px;
-    text-transform: uppercase;
-  }
-  
-  .save-outfit-button:hover {
-    background-color: #333;
-  }
-  
-  /* Empty row styling */
+  /* Empty state styling */
   .empty-row {
-    height: 220px;
-    background-color: #f9f9f9;
-    border: 1px dashed #ddd;
+    height: 240px;
   }
   
   .empty-item {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f9f9f9;
-    box-shadow: none;
-  }
-  
-  .empty-item-placeholder {
-    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    color: #999;
+    height: 100%;
+    background-color: #f9f9f9;
+    border: 1px dashed #ddd;
   }
   
   .empty-item-message {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    text-transform: capitalize;
+    font-size: 1rem;
+    margin-bottom: 5px;
   }
   
   .empty-item-subtext {
-    font-size: 0.9rem;
-    font-style: italic;
+    font-size: 0.85rem;
+    color: #999;
   }
   
-  .arrow.disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
+  /* Action button */
+  .outfit-actions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
   }
   
-  /* Make sure core rows are always visible */
-  .tops-section, .bottoms-section, .shoes-section {
-    display: block !important;
+  .save-outfit-button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 0;
   }
   
-  /* Loading State */
-  .styler-page.loading {
+  /* Category styling */
+  .single-category {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Outfit Display with Mannequin Layout */
+  .outfit-display {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .mannequin-layout {
     display: flex;
     flex-direction: column;
+    align-items: center;
+  }
+  
+  .single-category {
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+  }
+  
+  /* Specific styling for each category section */
+  .tops-section {
+    order: 1; /* Tops appear first */
+    width: 100%;
+    max-width: 800px;
+  }
+  
+  .bottoms-section {
+    order: 2; /* Bottoms appear second */
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .dresses-section,
+  .dresses-jumpsuits-section {
+    order: 2;
+    width: 100%;
+    max-width: 800px;
+  }
+  
+  .shoes-section {
+    order: 3; /* Shoes appear third */
+    width: 100%;
+    max-width: 800px;
+  }
+  
+  /* Any other categories appear after */
+  .accessories-section,
+  .outerwear-section {
+    order: 4;
+    width: 100%;
+    max-width: 800px;
+  }
+  
+  /* Loading state */
+  .styler-page.loading {
+    display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
   }
   
   .loading-spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
+    border: 4px solid rgba(0,0,0,0.1);
     border-top: 4px solid black;
+    border-radius: 50%;
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
   }
   
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .items-display {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    
+    .center-item, .side-item {
+      height: 200px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .items-display {
+      grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .side-item {
+      display: none;
+    }
+    
+    .center-item {
+      height: 240px;
+    }
   }
 
   

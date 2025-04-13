@@ -16,6 +16,8 @@ const StylerPage = () => {
   const [outfits, setOutfits] = useState([]);
   // Loading state
   const [loading, setLoading] = useState(true);
+  // State to track if dresses/jumpsuits is selected
+  const [hasDresses, setHasDresses] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -25,15 +27,26 @@ const StylerPage = () => {
     
     if (categoriesParam) {
       const categories = categoriesParam.split(',');
-      setSelectedCategories(categories);
-      console.log('Selected categories:', categories);
       
-      // Initialize current indices for each category
-      const initialIndices = {};
-      categories.forEach(cat => {
-        initialIndices[cat] = 0;
-      });
-      setCurrentIndices(initialIndices);
+      // Ensure we have at least 1 category and no more than 4
+      const validCategories = categories.slice(0, 4);
+      
+      if (validCategories.length > 0) {
+        setSelectedCategories(validCategories);
+        console.log('Selected categories:', validCategories);
+        
+        // Check if dresses/jumpsuits is selected
+        if (validCategories.includes('dresses/jumpsuits') || validCategories.includes('dresses')) {
+          setHasDresses(true);
+        }
+        
+        // Initialize current indices for each category
+        const initialIndices = {};
+        validCategories.forEach(cat => {
+          initialIndices[cat] = 0;
+        });
+        setCurrentIndices(initialIndices);
+      }
     }
     
     // Load the wardrobe data
@@ -46,8 +59,11 @@ const StylerPage = () => {
       const filtered = {};
       
       selectedCategories.forEach(category => {
-        // Convert category name to lowercase to match the data structure
-        const normalizedCategory = category.toLowerCase();
+        // Handle the case for dresses/jumpsuits which should map to 'dresses' in the data
+        const normalizedCategory = category.toLowerCase() === 'dresses/jumpsuits' 
+          ? 'dresses' 
+          : category.toLowerCase();
+        
         filtered[category] = wardrobe.filter(item => 
           item.category === normalizedCategory
         );
@@ -57,6 +73,15 @@ const StylerPage = () => {
       setLoading(false);
     }
   }, [wardrobe, selectedCategories]);
+  
+  // Validate that we have at least one selected category
+  useEffect(() => {
+    if (selectedCategories.length === 0 && !loading) {
+      // If somehow no categories were selected, redirect back to category selection
+      alert('Please select at least one category to style.');
+      goToStyling();
+    }
+  }, [selectedCategories, loading]);
 
   // Load wardrobe from Chrome storage
   const loadWardrobe = () => {
@@ -189,20 +214,29 @@ const StylerPage = () => {
     }
   };
 
-  // Get order of categories (tops first, then bottoms, then shoes)
+  // Get only the categories that were selected by the user
+  // Return them in a consistent order for better user experience
   const getOrderedCategories = () => {
-    // Start with the core categories that should always be present
-    const coreCategories = ['tops', 'bottoms', 'shoes'];
-    const orderedCategories = [...coreCategories];
+    // Define preferred order for categories (for consistent placement)
+    const categoryOrder = [
+      'tops', 
+      'dresses/jumpsuits', 
+      'bottoms', 
+      'shoes', 
+      'accessories'
+    ];
     
-    // Then add any other selected categories not already included
-    selectedCategories.forEach(category => {
-      if (!orderedCategories.includes(category)) {
-        orderedCategories.push(category);
-      }
-    });
+    // Filter to only selected categories and sort them according to preferred order
+    const orderedCategories = selectedCategories
+      .filter(category => category) // Remove any empty values
+      .sort((a, b) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        return indexA - indexB;
+      });
     
-    return orderedCategories;
+    // Limit to maximum 4 categories as specified
+    return orderedCategories.slice(0, 4);
   };
 
   // Render a category row
@@ -258,11 +292,6 @@ const StylerPage = () => {
                   e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
                 }}
               />
-              {items.length > 1 && (
-                <div className="lock-icon">
-                  🔒
-                </div>
-              )}
             </div>
 
             {hasMultipleItems && nextItemObj && (
@@ -357,11 +386,11 @@ const StylerPage = () => {
           />
         </div>
 
-        <div className="outfit-display mannequin-layout">
+        <div className={`outfit-display mannequin-layout ${orderedCategories.length === 1 ? 'single-category' : ''}`}>
           {orderedCategories.map(category => (
             <div 
               key={category} 
-              className={`category-section ${category.toLowerCase()}-section`}
+              className={`category-section ${category.toLowerCase().replace('/', '-')}-section`}
             >
               {renderCategoryRow(category)}
               <div className="category-divider"></div>
