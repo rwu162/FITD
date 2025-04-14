@@ -70,6 +70,24 @@ function VirtualClosetFullPage() {
     setFilteredItems(items);
   }, [currentCategory, searchQuery, wardrobe, sortBy]);
 
+  useEffect(() => {
+    const handleWardrobeUpdate = (message, sender, sendResponse) => {
+      if (message.action === 'wardrobeUpdated') {
+        console.log('Received wardrobe update, refreshing data');
+        setWardrobe(message.wardrobe || []);
+        return true;
+      }
+    };
+  
+    // Add the listener
+    chrome.runtime.onMessage.addListener(handleWardrobeUpdate);
+  
+    // Clean up when component unmounts
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleWardrobeUpdate);
+    };
+  }, []);
+
   // Toggle sort options
 const toggleSortOptions = () => {
   setShowSortOptions(!showSortOptions);

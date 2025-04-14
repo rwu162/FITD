@@ -516,24 +516,3 @@ function prioritizePriceSelection(prices) {
 
 // For debugging purposes only
 console.log('Virtual Closet content script ready with enhanced extraction capabilities');
-Update to fullpage.jsx
-Update the fullpage.jsx file to handle the wardrobe updates that are broadcast from the background script:
-javascript// Add this code near the top of the file, after the other useEffect hooks
-// Listen for wardrobe updates from the background script
-useEffect(() => {
-  const handleWardrobeUpdate = (message, sender, sendResponse) => {
-    if (message.action === 'wardrobeUpdated') {
-      console.log('Received wardrobe update, refreshing data');
-      setWardrobe(message.wardrobe || []);
-      return true;
-    }
-  };
-
-  // Add the listener
-  chrome.runtime.onMessage.addListener(handleWardrobeUpdate);
-
-  // Clean up when component unmounts
-  return () => {
-    chrome.runtime.onMessage.removeListener(handleWardrobeUpdate);
-  };
-}, []);

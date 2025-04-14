@@ -6,9 +6,9 @@
   "action": {
     "default_popup": "index.html",
     "default_icon": {
-      "16": "logo.png",
-      "48": "logo.png",
-      "128": "logo.png"
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
     },
     "default_width": 450,
     "default_height": 350
@@ -39,7 +39,8 @@
         "ai-outfit-service.js", 
         "ai-product-extractor.js",
         "assets/*", 
-        "vite.svg"
+        "vite.svg",
+        "logo.png"
       ],
       "matches": ["<all_urls>"]
     }
@@ -49,8 +50,8 @@
     "<all_urls>"
   ],
   "icons": {
-    "16": "logo.png",
-    "48": "logo.png",
-    "128": "logo.png"
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
   }
 }
