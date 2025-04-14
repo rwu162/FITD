@@ -257,12 +257,17 @@ function processWithServerExtraction(productInfo, pageText, imageUrl, pageUrl) {
       // Only add properties from AI if they're not null and we don't already have them
       Object.entries(productData).forEach(([key, value]) => {
         if (value !== null && value !== '') {
+          // For price, ensure consistent formatting
+          if (key === 'price' || key === 'originalPrice') {
+            value = formatPrice(value);
+          }
+          
           // Override if we didn't have this property or if our value was empty
           if (!finalProduct[key] || finalProduct[key] === '') {
             finalProduct[key] = value;
           }
         }
-      });
+      })
       
       // Always ensure these critical fields
       finalProduct.imageUrl = productInfo.imageUrl || imageUrl;
@@ -344,7 +349,7 @@ function extractPageInfoForProduct(imageUrl) {
       for (const element of elements) {
         const text = element.textContent.trim();
         if (text && /[\$\€\£\¥\₹\₩\₣]|\d+\.\d{2}|\d+\,\d{2}/.test(text)) {
-          productInfo.price = text;
+          productInfo.price = formatPrice(text); // Format price immediately
           foundPrice = true;
           break;
         }
@@ -1314,6 +1319,14 @@ function processProductInfo(response, sendResponse = null) {
       addedAt: response.addedAt || new Date().toISOString()
     };
     
+    // Ensure price is consistently formatted
+    if (productWithCategory.price) {
+      productWithCategory.price = formatPrice(productWithCategory.price);
+    }
+    if (productWithCategory.originalPrice) {
+      productWithCategory.originalPrice = formatPrice(productWithCategory.originalPrice);
+    }
+    
     // Store in Chrome storage
     chrome.storage.local.get('wardrobe', (data) => {
       const wardrobe = data.wardrobe || [];
@@ -1418,4 +1431,44 @@ function broadcastWardrobeUpdate(updatedWardrobe) {
       }
     });
   });
+}
+
+/**
+ * Format price to consistent format (e.g., $XX.XX)
+ * @param {string} priceString - Raw price string from the page
+ * @returns {string} Formatted price string
+ */
+function formatPrice(priceString) {
+  if (!priceString) return '';
+  
+  // Remove any non-breaking spaces and other whitespace
+  priceString = priceString.replace(/\s+/g, ' ').trim();
+  
+  // Extract currency symbol and numeric value
+  const currencyMatch = priceString.match(/[\$\€\£\¥\₹\₩\₣]/);
+  const currencySymbol = currencyMatch ? currencyMatch[0] : '$';
+  
+  // Extract numeric part (handles both dot and comma as decimal separator)
+  const numericMatch = priceString.match(/\d+(?:[.,]\d+)*/);
+  if (!numericMatch) return '';
+  
+  let numericPart = numericMatch[0];
+  
+  // Standardize to dot as decimal separator if comma is used
+  if (numericPart.includes(',')) {
+    // If it's likely a decimal comma (e.g., 19,99)
+    if (numericPart.split(',')[1].length <= 2) {
+      numericPart = numericPart.replace(',', '.');
+    } 
+    // If it's likely a thousands separator (e.g., 1,999)
+    else {
+      numericPart = numericPart.replace(/,/g, '');
+    }
+  }
+  
+  // Convert to a number and format with 2 decimal places
+  const price = parseFloat(numericPart);
+  if (isNaN(price)) return '';
+  
+  return `${currencySymbol}${price.toFixed(2)}`;
 }
