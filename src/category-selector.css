@@ -185,3 +185,13 @@ html, body {
       justify-content: flex-start;
     }
   }
+  
+  .logo {
+    position: absolute;
+    top: 20px;
+    left: 2rem;
+    max-width: 57px;
+    max-height: 71px;
+    object-fit: contain;
+    z-index: 20;
+  }

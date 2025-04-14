@@ -46,14 +46,14 @@ header {
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.logo img {
-  height: 3rem;
-  width: auto;
+  position: absolute;
+  top: 20px;
+  left: 2rem;
+  max-width: 57px;
+  max-height: 71px;
+  object-fit: contain;
+  transform: translateY(-10px);
+  z-index: 20;
 }
 
 .logo h1 {
@@ -736,6 +736,11 @@ header {
   color: white;
 }
 
+.nav-container {
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+}
+
 .main-nav button {
   color: rgba(255, 255, 255, 0.7);
 }
@@ -1248,7 +1253,7 @@ header {
   font-family: 'Vogue', serif;
   font-size: 16px;
   font-weight: 400;
-  border-radius: 0;;
+  border-radius: 0;
 }
 
 .styler-button:hover {
@@ -1270,6 +1275,7 @@ header {
   .styler-button {
     padding: 8px 15px;
     font-size: 12px;
+    border-radius: 0;
   }
 }
 
