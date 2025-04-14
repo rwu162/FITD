@@ -298,47 +298,65 @@ const StylerPage = () => {
       return (
         <div className="category-row">
           <div className="arrow-container left-arrow">
-            {hasMultipleItems && (
+            {hasMultipleItems ? (
               <div 
                 className="arrow" 
                 onClick={handlePrev}
               >
                 &lt;
               </div>
+            ) : (
+              <div className="arrow-placeholder"></div>
             )}
           </div>
 
-          <div className="items-display">
-            {hasMultipleItems && prevItemObj && (
-              <div className="side-item left-item">
-                <img 
-                  src={prevItemObj.imageUrl} 
-                  alt={prevItemObj.title || category} 
-                  className="item-image side-image"
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              </div>
-            )}
+                      <div className={`items-display ${!hasMultipleItems ? 'single-item' : ''}`}>
+            {hasMultipleItems ? (
+              <>
+                {prevItemObj && (
+                  <div className="side-item left-item">
+                    <img 
+                      src={prevItemObj.imageUrl} 
+                      alt={prevItemObj.title || category} 
+                      className="item-image side-image"
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+                )}
 
-            <div className="center-item">
-              <img 
-                src={currentItem.imageUrl} 
-                alt={currentItem.title || category} 
-                className="item-image center-image"
-                onError={(e) => {
-                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
-                }}
-              />
-            </div>
+                <div className="center-item">
+                  <img 
+                    src={currentItem.imageUrl} 
+                    alt={currentItem.title || category} 
+                    className="item-image center-image"
+                    onError={(e) => {
+                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+                </div>
 
-            {hasMultipleItems && nextItemObj && (
-              <div className="side-item right-item">
+                {nextItemObj && (
+                  <div className="side-item right-item">
+                    <img 
+                      src={nextItemObj.imageUrl} 
+                      alt={nextItemObj.title || category} 
+                      className="item-image side-image"
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              // When there's only one item, display it in a centered way
+              <div className="single-center-item">
                 <img 
-                  src={nextItemObj.imageUrl} 
-                  alt={nextItemObj.title || category} 
-                  className="item-image side-image"
+                  src={currentItem.imageUrl} 
+                  alt={currentItem.title || category} 
+                  className="item-image center-image"
                   onError={(e) => {
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
                   }}
@@ -348,13 +366,15 @@ const StylerPage = () => {
           </div>
 
           <div className="arrow-container right-arrow">
-            {hasMultipleItems && (
+            {hasMultipleItems ? (
               <div 
                 className="arrow" 
                 onClick={handleNext}
               >
                 &gt;
               </div>
+            ) : (
+              <div className="arrow-placeholder"></div>
             )}
           </div>
         </div>
@@ -403,8 +423,7 @@ const StylerPage = () => {
           <img 
             src="/logo.png" 
             alt="FITD Logo" 
-            className="logo" 
-            style={{ maxWidth: '50px', maxHeight: '40px' }}
+            className="logo"
           />
         </div>
         
