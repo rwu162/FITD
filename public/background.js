@@ -13,7 +13,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // Create browser action button
   chrome.action.onClicked.addListener(() => {
     // When the extension icon is clicked (not the popup), open the full page
-    openFullPage();
+    openFullPage({ isFromPopup: true });
   });
   
   // Initialize settings if they don't exist
@@ -43,7 +43,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Function to open the extension as a full page
 function openFullPage(options = {}) {
-  const { navigateTo, selectedCategories } = options;
+  const { navigateTo, selectedCategories, isFromPopup } = options;
   
   console.log('Opening page:', navigateTo, selectedCategories);
   
@@ -79,13 +79,32 @@ function openFullPage(options = {}) {
   
   console.log('Full URL to open:', fullURL);
   
-  chrome.tabs.create({url: fullURL}, (tab) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error opening page:', chrome.runtime.lastError);
-    } else {
-      console.log('Successfully opened page in tab:', tab.id);
-    }
-  });
+  // If the navigation is from the popup, create a new tab
+  if (isFromPopup) {
+    chrome.tabs.create({url: fullURL}, (tab) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error opening page:', chrome.runtime.lastError);
+      } else {
+        console.log('Successfully opened page in new tab:', tab.id);
+      }
+    });
+  } else {
+    // Get the current tab and update it instead of creating a new one
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      if (tabs.length === 0) {
+        console.error('No active tab found');
+        return;
+      }
+      
+      chrome.tabs.update(tabs[0].id, {url: fullURL}, (tab) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error updating tab:', chrome.runtime.lastError);
+        } else {
+          console.log('Successfully updated tab:', tab.id);
+        }
+      });
+    });
+  }
 }
 
 // Handle context menu clicks
@@ -97,47 +116,71 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     const imageUrl = info.srcUrl;
     
     if (imageUrl) {
-      // Try to extract product info from the page
-      chrome.tabs.sendMessage(
-        tab.id, 
-        { 
-          action: 'extractProductInfoForImage',
-          imageUrl: imageUrl  
-        }, 
-        (response) => {
-          // Handle errors communicating with content script
-          if (chrome.runtime.lastError) {
-            console.error('Error communicating with content script:', chrome.runtime.lastError);
-            // Create fallback product info with just the image
-            const fallbackResponse = {
-              title: tab.title || 'Unknown Product',
-              imageUrl: imageUrl,
-              url: tab.url,
-              timestamp: new Date().toISOString()
-            };
-            processProductInfo(fallbackResponse);
-            return;
-          }
-          
-          if (response) {
-            // Make sure we're using the right-clicked image
-            response.imageUrl = imageUrl;
-            processProductInfo(response);
-          } else {
-            // Fallback if no response
-            const fallbackResponse = {
-              title: tab.title || 'Unknown Product',
-              imageUrl: imageUrl,
-              url: tab.url,
-              timestamp: new Date().toISOString()
-            };
-            processProductInfo(fallbackResponse);
-          }
-        }
-      );
+      try {
+        // First ensure the content script is loaded
+        ensureContentScriptLoaded(tab.id)
+          .then(() => {
+            console.log('Content script is ready, sending extraction request');
+            
+            // Directly extract product info from the background script
+            // This approach bypasses potential issues with content script communication
+            extractProductServerSide(tab, imageUrl);
+          })
+          .catch(error => {
+            console.error('Failed to ensure content script:', error);
+            // Use fallback extraction
+            extractProductServerSide(tab, imageUrl);
+          });
+      } catch (error) {
+        console.error('Error in context menu handler:', error);
+        // Use fallback extraction
+        extractProductServerSide(tab, imageUrl);
+      }
     }
   }
 });
+
+// Add this helper function to background.js
+function ensureContentScriptLoaded(tabId) {
+  return new Promise((resolve, reject) => {
+    // First try to ping the content script to see if it's loaded
+    try {
+      chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
+        // If we get a response, the content script is loaded
+        if (response && response.status === 'pong') {
+          console.log('Content script already loaded and responsive');
+          resolve();
+          return;
+        }
+        
+        // If we get here, either there was no response or chrome.runtime.lastError
+        console.log('Content script not responsive, injecting now');
+        
+        // Inject the content script
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['content.js']
+        }, (injectionResults) => {
+          if (chrome.runtime.lastError) {
+            console.error('Script injection failed:', chrome.runtime.lastError);
+            reject(new Error('Failed to inject content script: ' + chrome.runtime.lastError.message));
+            return;
+          }
+          
+          console.log('Content script injected successfully');
+          
+          // Wait a moment for the script to initialize
+          setTimeout(() => {
+            resolve();
+          }, 300);
+        });
+      });
+    } catch (error) {
+      console.error('Error in ensureContentScriptLoaded:', error);
+      reject(error);
+    }
+  });
+}
 
 // Listen for messages from the popup or fullpage
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -145,6 +188,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'openStylerPage') {
     console.log('Opening styler page with categories:', message.selectedCategories);
+    
+    // Check if the message is coming from a popup or a tab
+    const isFromPopup = !sender.tab;
     
     // Get the styler.html URL
     const stylerUrl = chrome.runtime.getURL('styler.html');
@@ -156,34 +202,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       fullUrl = `${stylerUrl}?categories=${categoriesParam}`;
     }
     
-    // Open in a new tab
-    chrome.tabs.create({url: fullUrl}, (tab) => {
-      if (chrome.runtime.lastError) {
-        console.error('Error opening styler page:', chrome.runtime.lastError);
-        sendResponse({ 
-          success: false, 
-          error: chrome.runtime.lastError.message 
-        });
-      } else {
-        console.log('Successfully opened styler page in tab:', tab.id);
-        sendResponse({ success: true });
-      }
-    });
+    if (isFromPopup) {
+      // Open in a new tab if from popup
+      chrome.tabs.create({url: fullUrl}, (tab) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error opening styler page:', chrome.runtime.lastError);
+          sendResponse({ 
+            success: false, 
+            error: chrome.runtime.lastError.message 
+          });
+        } else {
+          console.log('Successfully opened styler page in tab:', tab.id);
+          sendResponse({ success: true });
+        }
+      });
+    } else {
+      // Update the current tab if from a page
+      chrome.tabs.update({url: fullUrl}, (tab) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error updating to styler page:', chrome.runtime.lastError);
+          sendResponse({ 
+            success: false, 
+            error: chrome.runtime.lastError.message 
+          });
+        } else {
+          console.log('Successfully updated to styler page in tab:', tab.id);
+          sendResponse({ success: true });
+        }
+      });
+    }
     
     return true; // Will respond asynchronously
   }
 
   if (message.action === 'openOutfitCreator') {
     console.log('Opening outfit creator with options:', message);
+    
+    // Check if the message is coming from a popup or a tab
+    const isFromPopup = !sender.tab;
+    
     openFullPage({
-      navigateTo: message.navigateTo
+      navigateTo: message.navigateTo,
+      isFromPopup: isFromPopup
     });
     sendResponse({ success: true });
     return true;
   }
   
   if (message.action === 'openFullPage') {
-    openFullPage(message.navigateTo); // Pass the navigation parameter
+    // Check if the message is coming from a popup or a tab
+    const isFromPopup = !sender.tab;
+    
+    openFullPage({
+      navigateTo: message.navigateTo,
+      isFromPopup: isFromPopup
+    });
     sendResponse({ success: true });
     return true;
   }
@@ -204,10 +277,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
         
         // Broadcast the update to all open extension pages
-        chrome.runtime.sendMessage({
-          action: 'wardrobeUpdated',
-          wardrobe: message.wardrobe
-        });
+        broadcastWardrobeUpdate(message.wardrobe);
       });
       return true; // Will respond asynchronously
     }
@@ -271,10 +341,195 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Function to extract product info using the server-side API
+function extractProductServerSide(tab, imageUrl) {
+  console.log('Extracting product data server-side for:', imageUrl);
+  
+  // Create a basic product info object with the data we definitely have
+  const basicProductInfo = {
+    title: tab.title || 'Unknown Product',
+    imageUrl: imageUrl,
+    url: tab.url,
+    timestamp: new Date().toISOString()
+  };
+  
+  // If we can extract visible text from the page, that's even better
+  try {
+    // Try to get text from the page if possible
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: getVisibleText
+    }, (results) => {
+      let pageText = '';
+      
+      if (!chrome.runtime.lastError && results && results[0]) {
+        pageText = results[0].result || '';
+      }
+      
+      // Now use our server API to extract product info
+      const API_PROXY_URL = 'https://fashiondam.onrender.com/api/extract-product';
+      
+      // Create a prompt for the AI
+      const prompt = constructPromptFromPage(pageText, imageUrl, tab.url);
+      
+      fetch(API_PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt
+        })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        if (!data.success) {
+          throw new Error(data.error || 'Unknown error from API');
+        }
+        
+        // Try to parse the AI response
+        try {
+          const jsonMatch = data.result.match(/\{[\s\S]*\}/);
+          const jsonString = jsonMatch ? jsonMatch[0] : data.result;
+          const productData = JSON.parse(jsonString);
+          
+          // Merge with basic info and process
+          const finalProduct = {
+            ...basicProductInfo,
+            ...productData
+          };
+          
+          processProductInfo(finalProduct);
+        } catch (parseError) {
+          console.error('Error parsing AI response:', parseError);
+          // Fall back to basic info
+          processProductInfo(basicProductInfo);
+        }
+      })
+      .catch(error => {
+        console.error('Error in server-side extraction:', error);
+        // Fall back to basic info
+        processProductInfo(basicProductInfo);
+      });
+    });
+  } catch (error) {
+    console.error('Error executing script to get text:', error);
+    // Fall back to basic info
+    processProductInfo(basicProductInfo);
+  }
+}
+
+// Function to extract visible text from a page
+function getVisibleText() {
+  try {
+    // Get all text nodes that are visible
+    const textNodes = [];
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          // Skip if parent is hidden
+          const style = window.getComputedStyle(node.parentElement);
+          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          // Skip if empty
+          if (node.nodeValue.trim() === '') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          // Skip if in a script or style tag
+          const parentTag = node.parentElement.tagName.toLowerCase();
+          if (parentTag === 'script' || parentTag === 'style' || parentTag === 'noscript') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    
+    while (walker.nextNode()) {
+      textNodes.push(walker.currentNode.nodeValue.trim());
+    }
+    
+    // Get the title 
+    const title = document.title;
+    textNodes.unshift('PAGE TITLE: ' + title);
+    
+    // Get current URL
+    textNodes.unshift('PAGE URL: ' + window.location.href);
+    
+    // Get h1, h2 elements (typically contain product names)
+    const headings = [...document.querySelectorAll('h1, h2')].map(h => h.innerText.trim());
+    if (headings.length > 0) {
+      textNodes.unshift('HEADINGS: ' + headings.join(' | '));
+    }
+    
+    // Get meta descriptions
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription && metaDescription.content) {
+      textNodes.push('META DESCRIPTION: ' + metaDescription.content);
+    }
+    
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription && ogDescription.content) {
+      textNodes.push('OG DESCRIPTION: ' + ogDescription.content);
+    }
+    
+    // Join all text
+    return textNodes.join('\n').trim();
+  } catch (error) {
+    console.error('Error extracting visible text:', error);
+    return '';
+  }
+}
+
+// Function to construct a prompt for AI extraction
+function constructPromptFromPage(pageText, imageUrl, pageUrl) {
+  // Truncate if too long (API limit and cost concerns)
+  const maxLength = 6000; // Reasonable limit for text
+  const truncatedText = pageText.length > maxLength 
+    ? pageText.substring(0, maxLength) + '...(truncated)'
+    : pageText;
+  
+  return `
+You are an AI assistant specialized in extracting product information from e-commerce websites. 
+I need you to analyze the following text from a product page and extract structured product information.
+Focus specifically on clothing or accessory product details.
+
+Extract the following information in JSON format:
+1. title: The name of the product
+2. brand: The brand name if available
+3. price: The price with currency symbol if available
+4. originalPrice: If there's a sale, the original price before discount
+5. color: The color of the product if mentioned
+6. description: A concise description of the product (max 200 characters)
+7. detailedDescription: A more complete description with features, material, etc. (max 1000 characters)
+8. material: The fabric/material composition if available
+9. category: Identify which category this belongs to: tops, bottoms, dresses, outerwear, shoes, accessories, or other
+
+IMPORTANT: The image URL associated with this product is: ${imageUrl}
+IMPORTANT: The page URL is: ${pageUrl}
+Respond ONLY with valid JSON without any other text or explanations.
+If you can't determine a specific field, use null for that field.
+
+Here is the webpage content:
+${truncatedText}
+`;
+}
+
+// Forward a message to the AI service (existing code)
 const outfitCache = new Map();
 const OUTFIT_CACHE_TTL = 3600000;
-// Forward a message to the AI service
+
 function forwardToAIService(message, sendResponse) {
+  // Existing function...
   try {
     console.log('Attempting to generate outfit with AI:', message);
     
@@ -402,6 +657,7 @@ function forwardToAIService(message, sendResponse) {
 
 // Helper function to create a fallback outfit when AI fails
 function createFallbackOutfit(wardrobeItems) {
+  // Existing function...
   console.log('Creating fallback outfit from', wardrobeItems.length, 'items');
   
   // Extract categories
@@ -443,6 +699,7 @@ function createFallbackOutfit(wardrobeItems) {
 
 // Helper function to construct a prompt from user input
 function constructPromptFromUserInput(wardrobeItems, userPrompt) {
+  // Existing function...
   // Extract categories from wardrobe
   const tops = wardrobeItems.filter(item => item.category === 'tops');
   const bottoms = wardrobeItems.filter(item => item.category === 'bottoms');
@@ -526,6 +783,7 @@ function extractColorFromTitle(text) {
 
 // Helper function to parse the OpenAI response
 function parseOutfitResponse(responseText, itemsByCategory) {
+  // Existing function...
   try {
     // Find JSON in the response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -742,17 +1000,19 @@ function processProductInfo(response, sendResponse = null) {
         item.url === productWithCategory.url
       );
       
+      let updatedWardrobe;
       if (existingItemIndex !== -1) {
         // Update existing item
         wardrobe[existingItemIndex] = productWithCategory;
+        updatedWardrobe = [...wardrobe]; // Create new array to ensure changes are detected
         console.log('Updated existing wardrobe item');
       } else {
         // Add new item
-        wardrobe.push(productWithCategory);
+        updatedWardrobe = [...wardrobe, productWithCategory];
         console.log('Added new wardrobe item');
       }
       
-      chrome.storage.local.set({ wardrobe }, () => {
+      chrome.storage.local.set({ wardrobe: updatedWardrobe }, () => {
         // Show a notification to the user
         chrome.notifications.create({
           type: 'basic',
@@ -769,11 +1029,8 @@ function processProductInfo(response, sendResponse = null) {
           });
         }
         
-        // Broadcast update to any open instances of the extension
-        chrome.runtime.sendMessage({
-          action: 'wardrobeUpdated',
-          wardrobe: wardrobe
-        });
+        // Broadcast update to any open extension pages
+        broadcastWardrobeUpdate(updatedWardrobe);
       });
     });
   } else if (sendResponse) {
@@ -781,4 +1038,41 @@ function processProductInfo(response, sendResponse = null) {
       error: 'Could not detect product information on this page.' 
     });
   }
+}
+
+// Function to broadcast wardrobe updates to all extension pages
+function broadcastWardrobeUpdate(wardrobe) {
+  console.log('Broadcasting wardrobe update to all extension pages');
+  
+  // First, broadcast via runtime messaging for popup or other non-tab contexts
+  chrome.runtime.sendMessage({
+    action: 'wardrobeUpdated',
+    wardrobe: wardrobe
+  });
+  
+  // Then, find all extension tabs and send updates
+  chrome.tabs.query({}, (tabs) => {
+    const extensionUrls = [
+      chrome.runtime.getURL('fullpage.html'),
+      chrome.runtime.getURL('category-selector.html'),
+      chrome.runtime.getURL('styler.html')
+    ];
+    
+    tabs.forEach((tab) => {
+      // Check if this tab is an extension page
+      if (tab.url && extensionUrls.some(url => tab.url.startsWith(url))) {
+        try {
+          chrome.tabs.sendMessage(tab.id, {
+            action: 'wardrobeUpdated',
+            wardrobe: wardrobe
+          }).catch(error => {
+            // Ignore errors when sending messages to extension pages
+            console.log('Could not send update to tab', tab.id);
+          });
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+    });
+  });
 }

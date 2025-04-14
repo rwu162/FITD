@@ -1,60 +1,53 @@
-// content.js - Enhanced with AI product extraction
+// content.js - Enhanced with better initialization and error handling
 console.log('Virtual Closet content script loaded');
 
-// Basic selectors for common product information (kept as fallback)
-const selectors = {
-  productTitle: [
-    'h1', '.product-title', '.product-name', '.pdp-title',
-    '[class*="productName"]', '[class*="product-title"]'
-  ],
-  productPrice: [
-    '.price', '.product-price', 'span.price', 'div.price',
-    'p.price', '[class*="productPrice"]', '[class*="price"]',
-    '.offer-price', '.current-price', '.sale-price', '.pdp-price',
-    '.discount-price', '.promo-price', '.special-price',
-    '[class*="sale"]', '[class*="discount"]', '[class*="promo"]'
-  ],
-  productBrand: [
-    '.brand', '.product-brand', '.vendor', '.manufacturer',
-    '.product-vendor', '.designer', '[class*="Brand"]',
-    '[class*="Designer"]', '[class*="Maker"]', 'meta[property="og:brand"]'
-  ],
-  productDescription: [
-    '.product-description', '.description', '.details', '#description',
-    '[class*="description"]', '[class*="product-detail"]',
-    'meta[name="description"]', 'meta[property="og:description"]'
-  ]
-};
+// Flag to track if the script is fully initialized
+let isInitialized = false;
 
-// Listen for messages from the extension
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'extractProductInfoForImage') {
-    console.log('Extracting product info for specific image:', message.imageUrl);
-    
-    // First try AI-powered extraction
-    extractProductInfoWithAI(message.imageUrl)
-      .then(aiResult => {
-        if (aiResult.success && aiResult.productData) {
-          // AI successfully extracted data
-          console.log('Successfully extracted product info using AI:', aiResult.productData);
-          sendResponse(aiResult.productData);
-        } else {
-          // Fall back to traditional extraction if AI fails
-          console.log('AI extraction failed, falling back to traditional methods');
-          const traditionalResult = extractProductInfoTraditional(message.imageUrl);
-          sendResponse(traditionalResult);
-        }
-      })
-      .catch(error => {
-        // Fall back to traditional extraction if AI throws an error
-        console.error('Error in AI extraction:', error);
-        const traditionalResult = extractProductInfoTraditional(message.imageUrl);
-        sendResponse(traditionalResult);
-      });
-    
-    return true; // Indicate async response
+// Flag to track if AI extractor is loaded
+let aiExtractorLoaded = false;
+
+// Initialize the content script immediately
+initializeContentScript();
+
+// Function to ensure proper initialization
+function initializeContentScript() {
+  if (isInitialized) {
+    console.log('Content script already initialized');
+    return;
   }
-});
+  
+  // Set up listener for messages from background script
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('Content script received message:', message.action);
+    
+    if (message.action === 'ping') {
+      console.log('Received ping, sending pong');
+      sendResponse({ status: 'pong', initialized: isInitialized });
+      return true;
+    }
+    
+    if (message.action === 'extractProductInfoForImage') {
+      console.log('Extracting product info for specific image:', message.imageUrl);
+      
+      // Extract product info using traditional methods (more reliable)
+      const traditionalResult = extractProductInfoTraditional(message.imageUrl);
+      sendResponse(traditionalResult);
+      return true;
+    }
+    
+    // Handle wardrobe updates from background script
+    if (message.action === 'wardrobeUpdated') {
+      console.log('Received wardrobe update notification');
+      // If we have any UI elements in the content script that need updating, do it here
+      return true;
+    }
+  });
+  
+  // Mark as initialized
+  isInitialized = true;
+  console.log('Content script fully initialized');
+}
 
 /**
  * Extract product information using AI
@@ -63,51 +56,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function extractProductInfoWithAI(targetImageUrl) {
   console.log('Starting AI extraction for image:', targetImageUrl);
+  
   try {
-    console.log('Requesting AI extractor script injection...');
-    
-    // Request the background script to inject our AI extractor
-    await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: 'injectAIExtractor'
-      }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error requesting script injection:', chrome.runtime.lastError);
-          reject(chrome.runtime.lastError);
-        } else if (response && response.success) {
-          console.log('AI extractor script injection successful');
-          resolve();
-        } else {
-          console.error('Failed to inject AI Extractor:', response?.error || 'Unknown error');
-          reject(new Error('Failed to inject AI Extractor'));
-        }
-      });
-    });
-    
-    // Extract the page text directly instead of using the injected script
-    console.log('Extracting page text for AI analysis...');
-    
     // Get all visible text from the page
     const pageText = extractVisibleText();
     
-    // Now send the text directly to the background script for OpenAI processing
-    console.log('Sending extracted text to OpenAI via background script...');
-    const result = await new Promise((resolve) => {
+    // Send the extracted text to the background script for processing
+    return new Promise((resolve) => {
       chrome.runtime.sendMessage({
         action: 'extractProductDataWithAI',
         prompt: constructPrompt(pageText, targetImageUrl),
         imageUrl: targetImageUrl,
         url: window.location.href
       }, (response) => {
-        console.log('Received AI extraction response:', response);
         resolve(response || { 
           success: false, 
           error: 'No response from AI extraction service' 
         });
       });
     });
-    
-    return result;
   } catch (error) {
     console.error('Error in AI extraction process:', error);
     return { 
@@ -115,115 +82,6 @@ async function extractProductInfoWithAI(targetImageUrl) {
       error: error.message || 'Unknown error in AI extraction'
     };
   }
-}
-
-/**
- * Extract all visible text from the current page
- * @returns {string} Concatenated visible text
- */
-function extractVisibleText() {
-  try {
-    // Get all text nodes that are visible
-    const textNodes = [];
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: function(node) {
-          // Skip if parent is hidden
-          const style = window.getComputedStyle(node.parentElement);
-          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          
-          // Skip if empty
-          if (node.nodeValue.trim() === '') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          
-          // Skip if in a script or style tag
-          const parentTag = node.parentElement.tagName.toLowerCase();
-          if (parentTag === 'script' || parentTag === 'style' || parentTag === 'noscript') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          
-          return NodeFilter.FILTER_ACCEPT;
-        }
-      }
-    );
-    
-    while (walker.nextNode()) {
-      textNodes.push(walker.currentNode.nodeValue.trim());
-    }
-    
-    // Special handling for meta tags (often contain good descriptions)
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription && metaDescription.content) {
-      textNodes.push('META DESCRIPTION: ' + metaDescription.content);
-    }
-    
-    const ogDescription = document.querySelector('meta[property="og:description"]');
-    if (ogDescription && ogDescription.content) {
-      textNodes.push('OG DESCRIPTION: ' + ogDescription.content);
-    }
-    
-    // Get the title 
-    const title = document.title;
-    textNodes.unshift('PAGE TITLE: ' + title);
-    
-    // Get current URL
-    textNodes.unshift('PAGE URL: ' + window.location.href);
-    
-    // Get h1, h2 elements (typically contain product names)
-    const headings = [...document.querySelectorAll('h1, h2')].map(h => h.innerText.trim());
-    if (headings.length > 0) {
-      textNodes.unshift('HEADINGS: ' + headings.join(' | '));
-    }
-    
-    // Join all text
-    return textNodes.join('\n').trim();
-  } catch (error) {
-    console.error('Error extracting visible text:', error);
-    return '';
-  }
-}
-
-/**
- * Construct a prompt for the AI extraction
- * @param {string} pageText - The extracted text from the page
- * @param {string} imageUrl - URL of the product image
- * @returns {string} Prompt for OpenAI
- */
-function constructPrompt(pageText, imageUrl) {
-  // Truncate if too long (API limit and cost concerns)
-  const maxLength = 6000; // Reasonable limit for the amount of text
-  const truncatedText = pageText.length > maxLength 
-    ? pageText.substring(0, maxLength) + '...(truncated)'
-    : pageText;
-  
-  return `
-You are an AI assistant specialized in extracting product information from e-commerce websites. 
-I need you to analyze the following text from a product page and extract structured product information.
-Focus specifically on clothing or accessory product details.
-
-Extract the following information in JSON format:
-1. title: The name of the product
-2. brand: The brand name if available
-3. price: The price with currency symbol if available
-4. originalPrice: If there's a sale, the original price before discount
-5. color: The color of the product if mentioned
-6. description: A concise description of the product (max 200 characters)
-7. detailedDescription: A more complete description with features, material, etc. (max 1000 characters)
-8. material: The fabric/material composition if available
-9. category: Identify which category this belongs to: tops, bottoms, dresses, outerwear, shoes, accessories, or other
-
-IMPORTANT: The image URL associated with this product is: ${imageUrl}
-Respond ONLY with valid JSON without any other text or explanations.
-If you can't determine a specific field, use null for that field.
-
-Here is the webpage content:
-${truncatedText}
-`;
 }
 
 /**
@@ -245,6 +103,31 @@ function extractProductInfoTraditional(targetImageUrl) {
   };
   
   try {
+    // Basic selectors for common product information (used as fallback)
+    const selectors = {
+      productTitle: [
+        'h1', '.product-title', '.product-name', '.pdp-title',
+        '[class*="productName"]', '[class*="product-title"]'
+      ],
+      productPrice: [
+        '.price', '.product-price', 'span.price', 'div.price',
+        'p.price', '[class*="productPrice"]', '[class*="price"]',
+        '.offer-price', '.current-price', '.sale-price', '.pdp-price',
+        '.discount-price', '.promo-price', '.special-price',
+        '[class*="sale"]', '[class*="discount"]', '[class*="promo"]'
+      ],
+      productBrand: [
+        '.brand', '.product-brand', '.vendor', '.manufacturer',
+        '.product-vendor', '.designer', '[class*="Brand"]',
+        '[class*="Designer"]', '[class*="Maker"]', 'meta[property="og:brand"]'
+      ],
+      productDescription: [
+        '.product-description', '.description', '.details', '#description',
+        '[class*="description"]', '[class*="product-detail"]',
+        'meta[name="description"]', 'meta[property="og:description"]'
+      ]
+    };
+    
     // Extract product title
     for (const selector of selectors.productTitle) {
       const element = document.querySelector(selector);
@@ -368,6 +251,115 @@ function extractProductInfoTraditional(targetImageUrl) {
     productInfo.error = error.message;
     return productInfo;
   }
+}
+
+/**
+ * Extract all visible text from the current page
+ * @returns {string} Concatenated visible text
+ */
+function extractVisibleText() {
+  try {
+    // Get all text nodes that are visible
+    const textNodes = [];
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          // Skip if parent is hidden
+          const style = window.getComputedStyle(node.parentElement);
+          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          // Skip if empty
+          if (node.nodeValue.trim() === '') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          // Skip if in a script or style tag
+          const parentTag = node.parentElement.tagName.toLowerCase();
+          if (parentTag === 'script' || parentTag === 'style' || parentTag === 'noscript') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    
+    while (walker.nextNode()) {
+      textNodes.push(walker.currentNode.nodeValue.trim());
+    }
+    
+    // Special handling for meta tags (often contain good descriptions)
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription && metaDescription.content) {
+      textNodes.push('META DESCRIPTION: ' + metaDescription.content);
+    }
+    
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription && ogDescription.content) {
+      textNodes.push('OG DESCRIPTION: ' + ogDescription.content);
+    }
+    
+    // Get the title 
+    const title = document.title;
+    textNodes.unshift('PAGE TITLE: ' + title);
+    
+    // Get current URL
+    textNodes.unshift('PAGE URL: ' + window.location.href);
+    
+    // Get h1, h2 elements (typically contain product names)
+    const headings = [...document.querySelectorAll('h1, h2')].map(h => h.innerText.trim());
+    if (headings.length > 0) {
+      textNodes.unshift('HEADINGS: ' + headings.join(' | '));
+    }
+    
+    // Join all text
+    return textNodes.join('\n').trim();
+  } catch (error) {
+    console.error('Error extracting visible text:', error);
+    return '';
+  }
+}
+
+/**
+ * Construct a prompt for the AI extraction
+ * @param {string} pageText - The extracted text from the page
+ * @param {string} imageUrl - URL of the product image
+ * @returns {string} Prompt for OpenAI
+ */
+function constructPrompt(pageText, imageUrl) {
+  // Truncate if too long (API limit and cost concerns)
+  const maxLength = 6000; // Reasonable limit for the amount of text
+  const truncatedText = pageText.length > maxLength 
+    ? pageText.substring(0, maxLength) + '...(truncated)'
+    : pageText;
+  
+  return `
+You are an AI assistant specialized in extracting product information from e-commerce websites. 
+I need you to analyze the following text from a product page and extract structured product information.
+Focus specifically on clothing or accessory product details.
+
+Extract the following information in JSON format:
+1. title: The name of the product
+2. brand: The brand name if available
+3. price: The price with currency symbol if available
+4. originalPrice: If there's a sale, the original price before discount
+5. color: The color of the product if mentioned
+6. description: A concise description of the product (max 200 characters)
+7. detailedDescription: A more complete description with features, material, etc. (max 1000 characters)
+8. material: The fabric/material composition if available
+9. category: Identify which category this belongs to: tops, bottoms, dresses, outerwear, shoes, accessories, or other
+
+IMPORTANT: The image URL associated with this product is: ${imageUrl}
+Respond ONLY with valid JSON without any other text or explanations.
+If you can't determine a specific field, use null for that field.
+
+Here is the webpage content:
+${truncatedText}
+`;
 }
 
 /**
@@ -523,4 +515,25 @@ function prioritizePriceSelection(prices) {
 }
 
 // For debugging purposes only
-console.log('Virtual Closet content script ready with AI extraction capabilities');
+console.log('Virtual Closet content script ready with enhanced extraction capabilities');
+Update to fullpage.jsx
+Update the fullpage.jsx file to handle the wardrobe updates that are broadcast from the background script:
+javascript// Add this code near the top of the file, after the other useEffect hooks
+// Listen for wardrobe updates from the background script
+useEffect(() => {
+  const handleWardrobeUpdate = (message, sender, sendResponse) => {
+    if (message.action === 'wardrobeUpdated') {
+      console.log('Received wardrobe update, refreshing data');
+      setWardrobe(message.wardrobe || []);
+      return true;
+    }
+  };
+
+  // Add the listener
+  chrome.runtime.onMessage.addListener(handleWardrobeUpdate);
+
+  // Clean up when component unmounts
+  return () => {
+    chrome.runtime.onMessage.removeListener(handleWardrobeUpdate);
+  };
+}, []);
