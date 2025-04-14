@@ -760,7 +760,7 @@ header {
 /* Outfit Card Styling */
 .outfit-card {
   border: 1px solid #eee;
-  border-radius: 8px;
+  border-radius: 0px;
   overflow: hidden;
   margin-bottom: 20px;
   background-color: #fff;
@@ -1277,5 +1277,17 @@ header {
     font-size: 12px;
     border-radius: 0;
   }
+}
+
+.secondary-button {
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: transparent;
+  color: #A89354;
+  border-radius: 0px; /* Adjust the roundness */
+  border-color: #A89354;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  display: inline-block;
 }
 

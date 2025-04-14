@@ -683,7 +683,6 @@ const handleSortOptionClick = (option) => {
                     <p className="item-title">{item.title || 'Unknown Item'}</p>
                     
                     {item.brand && <p className="item-brand">Brand: {item.brand}</p>}
-                    {item.price && <p className="item-price">Price: {item.price}</p>}
                     {item.color && <p className="item-color">Color: {item.color}</p>}
                     {item.material && <p className="item-material">Material: {item.material}</p>}
                     
@@ -876,7 +875,7 @@ const handleSortOptionClick = (option) => {
         
         .outfit-item-image {
           width: 200px;
-          height: 200px;
+          height: 100%;
           overflow: hidden;
           background-color: #f7f7f7;
         }
