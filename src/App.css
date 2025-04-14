@@ -498,3 +498,154 @@
 .add-tab p, .styler-tab p {
   margin: 0 auto 20px;
 }
+
+.wardrobe-item-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #f0f0f0;
+  border-radius: 0;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 330px; /* Fixed height for consistency */
+  position: relative; /* For absolute positioning of button */
+  padding-bottom: 42px; /* Make space for the button (button height + 2px margin) */
+}
+
+.wardrobe-item-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Image container */
+.wardrobe-item-card .item-image {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+}
+
+.wardrobe-item-card .item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Details section with proper spacing */
+.wardrobe-item-card .item-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 12px 12px 0 12px; /* Remove bottom padding since button is now positioned absolutely */
+  box-sizing: border-box;
+  width: 100%;
+  align-items: center;
+}
+
+/* Text elements with full width and proper margins */
+.wardrobe-item-card .item-title {
+  width: 100%;
+  margin: 0 0 5px 0;
+  text-align: center;
+  padding: 0 5px;
+  box-sizing: border-box;
+  color: #000;
+  font-family: Helvetica;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.25px;
+}
+
+.wardrobe-item-card .item-brand {
+  width: 100%;
+  margin: 0 0 5px 0;
+  text-align: center;
+  padding: 0 5px;
+  box-sizing: border-box;
+  color: #000;
+  font-family: Helvetica;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+  letter-spacing: 0.25px;
+}
+
+.wardrobe-item-card .item-price {
+  width: 100%;
+  margin: 0 0 5px 0;
+  text-align: center;
+  padding: 0 5px;
+  box-sizing: border-box;
+  color: #000;
+  font-family: Helvetica;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+  letter-spacing: 0.25px;
+}
+
+.wardrobe-item-card .item-category {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  padding: 0 5px;
+  box-sizing: border-box;
+  color: #000;
+  font-family: Helvetica;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: normal;
+  letter-spacing: 0.25px;
+}
+
+/* Button positioned exactly 2px from the bottom - FIXED VISIBILITY */
+.wardrobe-item-card .view-now-btn {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  width: 99px;
+  border: 0.7px solid #A89354;
+  background: #FFF;
+  color: #333;
+  padding: 0;
+  text-align: center;
+  transform: translateX(27%);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 27px; /* Fixed height for the button */
+  line-height: 25px; 
+  box-sizing: border-box;
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  display: block !important; /* Force display */
+  visibility: visible !important; /* Ensure visibility */
+  opacity: 1 !important; /* Ensure opacity */
+}
+
+.wardrobe-item-card .view-now-btn:hover {
+  background-color: #f9f9f9;
+  border-color: #ccc;
+}
+
+/* Grid layout */
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  padding: 0 15px;
+}
+
+/* Ensure no CSS is accidentally hiding the button */
+.wardrobe-item-card:not(:hover) .view-now-btn {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}

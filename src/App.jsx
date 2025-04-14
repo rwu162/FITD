@@ -16,15 +16,24 @@ function App() {
     loadWardrobe();
   }, []);
 
-  // Effect to filter items when category or wardrobe changes
+  // Effect to filter and sort items when category or wardrobe changes
   useEffect(() => {
     if (wardrobe.length > 0) {
-      if (currentCategory === 'all') {
-        setFilteredItems(wardrobe);
-      } else {
-        const filtered = wardrobe.filter(item => item.category === currentCategory);
-        setFilteredItems(filtered);
+      let items = [...wardrobe];
+      
+      // Apply category filter
+      if (currentCategory !== 'all') {
+        items = items.filter(item => item.category === currentCategory);
       }
+      
+      // Sort by newest first
+      items = items.sort((a, b) => {
+        return new Date(b.addedAt) - new Date(a.addedAt);
+      });
+      
+      setFilteredItems(items);
+    } else {
+      setFilteredItems([]);
     }
   }, [currentCategory, wardrobe]);
 
@@ -36,7 +45,6 @@ function App() {
         chrome.storage.local.get('wardrobe', (data) => {
           console.log('Loaded wardrobe data:', data.wardrobe);
           setWardrobe(data.wardrobe || []);
-          setFilteredItems(data.wardrobe || []);
           setLoading(false);
         });
       } else {
@@ -147,7 +155,7 @@ function App() {
           </button>
         </div>
         
-        <div className="wardrobe-items">
+        <div className="wardrobe-grid">
           {filteredItems.map(item => (
             <div className="wardrobe-item-card" key={item.addedAt}>
               <div className="item-image">
@@ -163,6 +171,13 @@ function App() {
                 <h3 className="item-title">{item.title || "Untitled Item"}</h3>
                 <p className="item-brand">{item.brand || ''}</p>
                 <p className="item-price">{item.price || ''}</p>
+                <p className="item-category">{item.category?.charAt(0).toUpperCase() + item.category?.slice(1) || ''}</p>
+                <button 
+                  className="view-now-btn" 
+                  onClick={() => item.url ? window.open(item.url, '_blank') : null}
+                >
+                  View Now
+                </button>
               </div>
             </div>
           ))}
@@ -202,26 +217,25 @@ function App() {
       </main>
       
       <nav className="bottom-nav">
-      <button 
-        className={`nav-tab ${activeTab === 'add' ? 'active' : ''}`}
-        onClick={() => setActiveTab('add')}
-      >
-        ADD
-      </button>
-      <button 
-        className={`nav-tab ${activeTab === 'wardrobe' ? 'active' : ''}`}
-        onClick={() => setActiveTab('wardrobe')}
-      >
-        WARDROBE
-      </button>
-      <button 
-        className={`nav-tab ${activeTab === 'styler' ? 'active' : ''}`}
-        onClick={() => setActiveTab('styler')}
-      >
-        STYLER
-      </button>
-    </nav>
-
+        <button 
+          className={`nav-tab ${activeTab === 'add' ? 'active' : ''}`}
+          onClick={() => setActiveTab('add')}
+        >
+          ADD
+        </button>
+        <button 
+          className={`nav-tab ${activeTab === 'wardrobe' ? 'active' : ''}`}
+          onClick={() => setActiveTab('wardrobe')}
+        >
+          WARDROBE
+        </button>
+        <button 
+          className={`nav-tab ${activeTab === 'styler' ? 'active' : ''}`}
+          onClick={() => setActiveTab('styler')}
+        >
+          STYLER
+        </button>
+      </nav>
       
       {message && (
         <div className={`message ${message.type}`}>
