@@ -12,7 +12,7 @@ const StylerPage = () => {
   // State for the current outfit - index of selected item in each category
   const [currentIndices, setCurrentIndices] = useState({});
   // State for outfit name
-  const [outfitName, setOutfitName] = useState("dinner in downtown");
+  const [outfitName, setOutfitName] = useState("outfit name here");
   // State for outfits
   const [outfits, setOutfits] = useState([]);
   // Loading state
