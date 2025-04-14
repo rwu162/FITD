@@ -84,8 +84,12 @@ html, body {
     text-align: center;
     width: 300px;
     background: transparent;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
+    font-family: Helvetica;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: normal;
+    letter-spacing: 0.25px;
   }
   
   /* Outfit display layout */
@@ -129,7 +133,7 @@ html, body {
   .items-display {
     display: grid;
     grid-template-columns: 120px 1fr 120px;
-    gap: 0;
+    gap: 5px;
     width: 100%;
     align-items: center;
   }
@@ -268,12 +272,17 @@ html, body {
     color: white;
     border: none;
     padding: 12px 40px;
-    font-size: 0.9rem;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
     cursor: pointer;
     border-radius: 0;
     transition: background-color 0.2s ease;
+    font-family: Helvetica;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 200;
+    line-height: normal;
+    letter-spacing: 0.25px;
+    text-align: center;
   }
   
   .save-outfit-button:hover {
@@ -611,6 +620,112 @@ html, body {
       height: 240px;
       max-width: 300px;
     }
+  }
+  .items-display {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(300px, 2fr) minmax(150px, 1fr);
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+  }
+  
+  /* When there's only one item in a category */
+  .items-display.single-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Ensure side items have proper width and scaling */
+  .side-item {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 320px;
+    width: 100%; /* Let it take the full width of its grid column */
+    opacity: 0.6;
+  }
+  
+  .side-image {
+    max-height: 220px;
+    max-width: 100%; /* Ensure the image scales properly within container */
+    width: auto; /* Let width adjust based on the height constraint */
+  }
+  
+  /* Update responsive breakpoints to handle wider side items */
+  @media (max-width: 992px) {
+    .items-display {
+      grid-template-columns: minmax(120px, 1fr) minmax(240px, 2fr) minmax(120px, 1fr);
+    }
+    
+    .side-item {
+      height: 280px;
+    }
+    
+    .side-image {
+      max-height: 200px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .items-display {
+      grid-template-columns: minmax(100px, 1fr) minmax(200px, 2fr) minmax(100px, 1fr);
+    }
+    
+    .side-item {
+      height: 240px;
+    }
+    
+    .side-image {
+      max-height: 180px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .items-display {
+      grid-template-columns: 50px 1fr 50px;
+    }
+    
+    /* On smallest screens, you might want to keep hiding the side items */
+    .side-item {
+      display: none;
+    }
+} 
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Right align the items */
+    gap: 1px; /* Space between the links */
+    position: absolute;
+    top: 15px;
+    right: 40px;
+  }
+  
+  .nav-link {
+    color: #000;
+    text-decoration: none;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: color 0.2s ease;
+  }
+  
+  .nav-link:hover {
+    color: #555;
+  }
+  
+  /* Update styler header to accommodate the new layout */
+  .styler-header {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    box-shadow: none;
+    padding: 10px 40px;
+    height: 60px; /* Slightly increased to accommodate stacked links */
+    border-bottom: none;
+    position: relative; /* For absolute positioning of nav-links */
   }
 
   

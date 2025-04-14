@@ -238,43 +238,40 @@ const handleSortOptionClick = (option) => {
           <div className={`sort-container ${showSortOptions ? 'active' : ''}`}>
             <div className="sort-header" onClick={toggleSortOptions}>
               <span className="sort-text">Sort By</span>
-              <span className="sort-icon">▼</span>
+              <span className="sort-icon">{showSortOptions ? '–' : '+'}</span>
             </div>
-            <div className="sort-options expanded">
-              <div 
-                className={`sort-option ${sortBy === 'newest' ? 'active' : ''}`}
-                onClick={() => handleSortOptionClick('newest')}
-              >
-                Newest
+  
+            {showSortOptions && (
+              <div className="sort-options">
+                <div
+                  className={`sort-option ${sortBy === 'newest' ? 'active' : ''}`}
+                  onClick={() => handleSortOptionClick('newest')}
+                >
+                  Newest
+                </div>
+                <div
+                  className={`sort-option ${sortBy === 'oldest' ? 'active' : ''}`}
+                  onClick={() => handleSortOptionClick('oldest')}
+                >
+                  Oldest
+                </div>
+                <div
+                  className={`sort-option ${sortBy === 'price-low-high' ? 'active' : ''}`}
+                  onClick={() => handleSortOptionClick('price-low-high')}
+                >
+                  Price: Low to High
+                </div>
+                <div
+                  className={`sort-option ${sortBy === 'price-high-low' ? 'active' : ''}`}
+                  onClick={() => handleSortOptionClick('price-high-low')}
+                >
+                  Price: High to Low
+                </div>
               </div>
-              <div 
-                className={`sort-option ${sortBy === 'oldest' ? 'active' : ''}`}
-                onClick={() => handleSortOptionClick('oldest')}
-              >
-                Oldest
-              </div>
-              <div 
-                className={`sort-option ${sortBy === 'price-low-high' ? 'active' : ''}`}
-                onClick={() => handleSortOptionClick('price-low-high')}
-              >
-                Price: Low to High
-              </div>
-              <div 
-                className={`sort-option ${sortBy === 'price-high-low' ? 'active' : ''}`}
-                onClick={() => handleSortOptionClick('price-high-low')}
-              >
-                Price: High to Low
-              </div>
-              <div 
-                className={`sort-option ${sortBy === 'favorites' ? 'active' : ''}`}
-                onClick={() => handleSortOptionClick('favorites')}
-              >
-                Favorites
-              </div>
-            </div>
+            )}
           </div>
         </div>
-        
+  
         <div className="filter-right">
           <div className="search-container">
             <input 
@@ -285,11 +282,11 @@ const handleSortOptionClick = (option) => {
               onChange={handleSearch}
             />
           </div>
-          {/* Category dropdown removed */}
         </div>
       </div>
     );
   };
+  
   
   // Enhanced save outfit function
   const saveOutfit = (newOutfit) => {
@@ -420,7 +417,7 @@ const handleSortOptionClick = (option) => {
     if (outfits.length === 0) {
       return (
         <div className="empty-state">
-          <p>You haven't created any outfits yet. Start by clicking "Create New Outfit".</p>
+          <p>You haven't created any outfits yet. Start by going to STYLER.</p>
           <button 
             className="primary-button create-outfit-button"
             onClick={startOutfitCreation}
@@ -614,6 +611,23 @@ const handleSortOptionClick = (option) => {
     );
   };
 
+  const openStylerPage = () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      // This is the exact message needed based on your background.js implementation
+      chrome.runtime.sendMessage({ 
+        action: 'openOutfitCreator',  // This action is handled specifically in background.js
+        navigateTo: 'category-selector'  // This value is used in the openFullPage function
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error navigating to category selector:', chrome.runtime.lastError);
+        }
+      });
+    } else {
+      // For development outside extension
+      window.location.href = '/category-selector.html';
+    }
+  };
+
   // New function to render outfit details modal
   const renderOutfitDetailsModal = () => {
     if (!showOutfitDetailsModal || !selectedOutfit) return null;
@@ -698,6 +712,14 @@ const handleSortOptionClick = (option) => {
 
   return (
     <div id="app" className='fullscreen-app'>
+      <div className="top-right-styler">
+      <button 
+        className="styler-button"
+        onClick={openStylerPage}
+      >
+        STYLER
+      </button>
+      </div>
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="top-bar">

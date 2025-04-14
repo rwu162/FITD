@@ -1,4 +1,18 @@
 /* Compact style for the popup */
+@font-face {
+  font-family: 'Vogue';
+  src: url('./fonts/Vogue.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Olivera';
+  src: url('./fonts/Olivera_Demo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 .compact-style {
   width: 450px;  /* Wider */
   height: 320px; /* Shorter */
@@ -11,6 +25,7 @@
 
 /* Header styles */
 .app-header {
+  font-family: 'Vogue', serif;
   display: flex;
   justify-content: center; /* Center the logo horizontally */
   align-items: center;
@@ -20,7 +35,7 @@
 }
 
 .brand-logo {
-  font-family: 'Times New Roman', serif;
+  font-family: 'Vogue', serif;
   font-size: 32px;
   margin: 0;
   letter-spacing: 2px;
@@ -120,6 +135,7 @@
 
 /* Header */
 .app-header {
+  font-family: 'Vogue', serif;
   display: flex;
   justify-content: center; /* Center the logo horizontally */
   align-items: center;
@@ -129,8 +145,8 @@
 }
 
 .brand-logo {
-  font-family: 'Times New Roman', serif;
-  font-size: 32px;
+  font-family: 'Vogue', serif;
+  font-size: 40px;
   margin: 0;
   letter-spacing: 2px;
   font-weight: bold;
@@ -150,8 +166,10 @@
 }
 
 .app-content h1 {
-  font-size: 24px;
+  font-family: Helvetica;
+  font-size: 15px;
   margin-bottom: 20px;
+  text-align: center;
   font-weight: normal;
 }
 
@@ -187,11 +205,12 @@
 }
 
 .nav-tab {
+  font-family: 'Olivera', sans-serif;
   flex: 1;
   padding: 15px 0;
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 25px;
   cursor: pointer;
   color: #000;
   position: relative;
@@ -243,6 +262,10 @@
   width: 100%;
   height: 2px;
   background-color: #A89354; /* Gold underline on hover */
+}
+
+.nav-tab:focus {
+  outline: none;
 }
 
 /* Add tab specific */

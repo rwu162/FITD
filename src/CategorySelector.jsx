@@ -16,6 +16,27 @@ const CategorySelector = () => {
     accessories: false
   });
 
+  const goToWardrobe = () => {
+    console.log('Attempting to navigate back to wardrobe...');
+    
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      // The key point: use a simple action without any additional parameters
+      chrome.runtime.sendMessage({ 
+        action: 'openFullPage'
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Navigation error:', chrome.runtime.lastError);
+        } else {
+          console.log('Navigation response:', response);
+        }
+      });
+    } else {
+      // For development outside extension
+      console.log('Redirecting to fullpage.html');
+      window.location.href = '/fullpage.html';
+    }
+  };
+
   // Load wardrobe data
   useEffect(() => {
     console.log('CategorySelector useEffect Called');
@@ -104,7 +125,16 @@ const CategorySelector = () => {
           alt="FITD logo" 
           className="logo" 
         />
-      <a href="#" className="back-link">BACK TO WARDROBE</a>
+      <a 
+          href="#" 
+          onClick={(e) => {
+            e.preventDefault();
+            goToWardrobe();
+          }} 
+          className="back-link"
+        >
+        BACK TO WARDROBE
+      </a>
       
       <main className="category-selector-content">
         <h1>WHAT ARE YOU STYLING TODAY ?</h1>

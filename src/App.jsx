@@ -163,7 +163,6 @@ function App() {
                 <h3 className="item-title">{item.title || "Untitled Item"}</h3>
                 <p className="item-brand">{item.brand || ''}</p>
                 <p className="item-price">{item.price || ''}</p>
-                <button className="view-now-btn">View Now</button>
               </div>
             </div>
           ))}
@@ -176,10 +175,8 @@ function App() {
   const renderStylerTab = () => {
     return (
       <div className="styler-tab">
-        <h1>Outfit Creator</h1>
-        
         <p>
-          Create outfits from your wardrobe items using our outfit creator.
+          Ready to get to styling? Mix and match your favorite pieces now.
         </p>
         
         <button 

@@ -244,7 +244,7 @@ const StylerPage = () => {
   const goToStyling = () => {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ 
-        action: 'openFullPage',
+        action: 'openOutfitCreator',
         navigateTo: 'category-selector'
       });
     } else {

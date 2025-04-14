@@ -12,6 +12,20 @@ html, body {
     height: 100vh;
     width: 100vw;
   }
+
+  @font-face {
+    font-family: 'Vogue';
+    src: url('./fonts/Vogue.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'Olivera';
+    src: url('./fonts/Olivera_Demo.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
   
   /* Category Selector Styles */
   .category-selector-container {
@@ -41,7 +55,7 @@ html, body {
     right: 20px;
     text-decoration: none;
     color: black;
-    font-family: Arial, sans-serif;
+    font-family: Helvetica;
     font-size: 14px;
     z-index: 20;
   }
@@ -57,8 +71,12 @@ html, body {
   }
   
   .category-selector-content h1 {
-    font-family: 'Times New Roman', serif;
-    font-size: 36px;
+    font-family: 'Vogue', serif;
+    font-size: 50px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 0.25px;
     margin-bottom: 20px;
     text-transform: uppercase;
   }
@@ -94,8 +112,7 @@ html, body {
     display: flex;
     align-items: center;
     width: 100%;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
+    font-family: Helvetica;
     font-size: 16px;
   }
   
@@ -119,7 +136,7 @@ html, body {
     color: white;
     border: none;
     padding: 15px;
-    font-family: Arial, sans-serif;
+    font-family: Helvetica;
     font-size: 16px;
     text-transform: uppercase;
     cursor: pointer;

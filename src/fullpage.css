@@ -1,4 +1,19 @@
 /* Reset and base styles */
+
+@font-face {
+  font-family: 'Vogue';
+  src: url('./fonts/Vogue.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Olivera';
+  src: url('./fonts/Olivera_Demo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -37,13 +52,30 @@ header {
 }
 
 .logo img {
-  height: 2rem;
+  height: 3rem;
   width: auto;
 }
 
 .logo h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-family: 'Vogue', serif;
+  text-align: center;
+  transform: translateX(5px);
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 8px;
+  margin: 0;
+}
+
+.title {
+  font-family: 'Vogue', serif;  /* or 'Olivera', sans-serif */
+  text-align: center;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 8px;
   margin: 0;
 }
 
@@ -70,6 +102,15 @@ header {
   color: white;
   border-bottom-color: white;
   font-weight: 500;
+}
+
+.nav-links li a {
+  font-family: 'Olivera', sans-serif;
+  font-size: 26px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 1.5px;
 }
 
 .header-actions {
@@ -152,72 +193,122 @@ section.hidden {
 
 /* Sort by dropdown styling */
 .sort-container {
-  position: relative;
-  margin-bottom: 1.5rem;
-  width: 159px;
-  z-index: 10;
+  width: 180px;
+  font-family: Arial, sans-serif;
 }
 
 .sort-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background-color: white;
-  border: 1px solid #e8e0d8;
+  font-size: 20px;
+  font-weight: bold;
   cursor: pointer;
-  font-family: 'Cormorant Garamond', serif;
-}
-
-.sort-text {
-  font-size: 1rem;
+  gap: 8px;
 }
 
 .sort-icon {
-  transition: transform 0.3s ease;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .sort-options {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  background-color: white;
-  border: 1px solid #e8e0d8;
-  border-top: none;
-  height: 200px;
-  display: none;
-  flex-direction: column;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 20;
-  overflow: hidden;
-}
-
-.sort-options.expanded {
-  height: 250px; /* Even taller */
-}
-
-.sort-container.active .sort-options {
+  margin-top: 10px;
+  border: 1px solid black;
+  padding: 10px;
   display: flex;
-}
-
-.sort-container.active .sort-icon {
-  transform: rotate(180deg);
+  flex-direction: column;
+  gap: 10px;
 }
 
 .sort-option {
-  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px; 
+  font-size: 15px;
+}
+
+/* Custom radio style */
+.sort-option input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid black;
+  border-radius: 50%;
+  position: relative;
   cursor: pointer;
+}
+
+.sort-option input[type="radio"]:checked::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: black;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  border-radius: 50%;
+}
+
+.sort-options {
+  margin-top: 10px;
+  border: 1px solid black;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.sort-container.active .sort-options {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.sort-options {
+  margin-top: 10px;
+  border: 1px solid black;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: white;
+  border-radius: 0px;
+  flex-shrink: 0;
+}
+
+.sort-option {
+  font-family: Helvetica;
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.25px;
+  padding: 10px 12px;
+  height: 40px; /* Fixed height */
+  border-radius: 0px;
+  box-sizing: border-box;
   transition: background-color 0.2s ease;
+  cursor: pointer;
 }
 
 .sort-option:hover {
-  background-color: #f9f6f3;
+  background-color: #f5f5f5;
 }
 
-.sort-option.active {
-  color: #a8896c;
-  font-weight: 500;
+.sort-text {
+  color: #000;
+  font-family: Helvetica;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.25px;
 }
 
 /* Wardrobe grid */
@@ -686,7 +777,7 @@ header {
 .outfit-name h3 {
   margin: 0;
   font-size: 18px;
-  font-family: 'Playfair Display', serif;
+  font-family: Helvetica;
 }
 
 .outfit-items-grid {
@@ -1048,5 +1139,137 @@ header {
   padding: 1rem;
   max-height: 70vh;
   overflow-y: auto;
+}
+
+.item-card {
+  border: none;
+  border-radius: 0;
+  overflow: visible; /* Changed from hidden to allow elements to flow naturally */
+  background-color: transparent; /* Changed from white to transparent */
+  box-shadow: none; /* Removed box shadow */
+  transition: transform 0.3s ease;
+  margin-bottom: 25px; /* Add margin for spacing between cards */
+}
+
+.item-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Keep the image styling but ensure proper height */
+.item-image {
+  width: 419;
+  height: 586;
+  overflow: hidden;
+  background-color: #f9f9f9; /* Light background for image area */
+  position: relative;
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.item-card:hover .item-image img {
+  transform: scale(1.0);
+}
+
+/* Restyle the item details section */
+.item-details {
+  font-family: Helvetica;
+  padding: 6px 0; /* Reduced padding and removed left/right padding */
+  text-align: left; /* Left align all text */
+  background-color: transparent; /* Ensure background is transparent */
+  box-shadow: none;
+  position: relative; /* For price positioning */
+}
+
+/* Brand styling */
+.item-brand {
+  font-size: 0.85rem;
+  color: #777;
+  margin-bottom: 0px;
+  font-weight: 700;
+}
+
+/* Title styling */
+.item-details h3 {
+  font-family: Helvetica;
+  font-size: 0.95rem;
+  font-weight: 300;
+  margin-bottom: 0px;
+  line-height: 1.3;
+  white-space: normal; /* Allow text to wrap */
+  overflow: visible;
+  display: block;
+  padding-right: 70px; /* Make space for the price */
+}
+
+/* Price styling - positioned to the right */
+.item-price {
+  position: absolute;
+  top: 10px; /* Align with the top of details section (same as brand) */
+  right: 0;
+  font-weight: 300;
+  font-size: 0.95rem;
+}
+
+/* For smaller screens, adjust the layout */
+@media (max-width: 768px) {
+  .item-image {
+    height: 220px;
+  }
+  
+  .item-details h3 {
+    padding-right: 65px; /* Slightly less padding on smaller screens */
+  }
+}
+
+.top-right-styler {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  z-index: 100; /* Ensure it appears above other elements */
+}
+
+.styler-button {
+  background-color: black;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  line-height: normal;
+  letter-spacing: 0.25px;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-family: 'Vogue', serif;
+  font-size: 16px;
+  font-weight: 400;
+  border-radius: 0;;
+}
+
+.styler-button:hover {
+  border-radius: 0;
+  background-color: #333;
+}
+
+/* Ensure the navbar has position relative for proper absolute positioning */
+.navbar {
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .top-right-styler {
+    top: 15px;
+    right: 15px;
+  }
+  
+  .styler-button {
+    padding: 8px 15px;
+    font-size: 12px;
+  }
 }
 
