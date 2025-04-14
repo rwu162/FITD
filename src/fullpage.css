@@ -292,234 +292,6 @@ section.hidden {
   font-style: italic;
 }
 
-/* Outfits section */
-.outfits-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.outfits-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.outfit-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.outfit-name {
-  text-align: center;
-}
-
-.outfit-items-grid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  max-width: 300px;
-  margin: 0 auto;
-}
-
-.outfit-item-thumbnail {
-  width: 100%;
-  height: 180px;
-  overflow: hidden;
-  border-radius: 4px;
-  border: 1px solid #e1e4e8;
-}
-
-.outfit-item-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.outfit-item-thumbnail[data-category="outerwear"] {
-  order: 1;
-}
-
-.outfit-item-thumbnail[data-category="tops"] {
-  order: 2;
-}
-
-.outfit-item-thumbnail[data-category="dresses"] {
-  order: 3;
-}
-
-.outfit-item-thumbnail[data-category="bottoms"] {
-  order: 4;
-}
-
-.outfit-item-thumbnail[data-category="shoes"] {
-  order: 5;
-}
-
-.outfit-item-thumbnail[data-category="accessories"] {
-  order: 6;
-}
-
-.outfit-footer {
-  padding: 1rem;
-  border-top: 1px solid #e1e4e8;
-  display: flex;
-  justify-content: space-between;
-}
-
-.outfit-occasion {
-  font-size: 0.875rem;
-  color: #586069;
-}
-
-/* Outfit Creator */
-#outfit-creator {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-top: 2rem;
-  padding: 1.5rem;
-}
-
-.outfit-creator-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.outfit-builder {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-}
-
-.outfit-items {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.outfit-item-slot {
-  border: 2px dashed #ccc;
-  border-radius: 8px;
-  padding: 1rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.outfit-item-slot:hover {
-  border-color: #4a6fa5;
-  background-color: rgba(74, 111, 165, 0.05);
-}
-
-.slot-label {
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  color: #586069;
-}
-
-.slot-content {
-  height: 150px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.slot-content.empty {
-  color: #ccc;
-}
-
-.slot-content img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.outfit-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-family: inherit;
-}
-
-.form-group textarea {
-  min-height: 100px;
-  resize: vertical;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.item-selection-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.item-selection-panel:not(.hidden) {
-  display: flex;
-}
-
-.item-selection-panel .panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background-color: #f6f8fa;
-  border-bottom: 1px solid #e1e4e8;
-}
-
-.item-selection-panel .close-panel {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-.item-selection-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
 /* Add Item View */
 .add-container {
   max-width: 800px;
@@ -888,3 +660,393 @@ header {
     grid-template-columns: 1fr;
   }
 }
+
+/* Outfit Card Styling */
+.outfit-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.outfit-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.outfit-name {
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.outfit-name h3 {
+  margin: 0;
+  font-size: 18px;
+  font-family: 'Playfair Display', serif;
+}
+
+.outfit-items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 10px;
+  gap: 8px;
+  background-color: #f9f9f9;
+}
+
+.outfit-item-thumbnail {
+  width: 80px;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  background-color: #fff;
+}
+
+.outfit-item-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.outfit-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #eee;
+}
+
+.outfit-created-date {
+  font-size: 12px;
+  color: #888;
+}
+
+.delete-outfit {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.delete-outfit:hover {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+/* Outfit Grid */
+.outfits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Modal Styling for Outfit Details */
+.outfit-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.outfit-details-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.outfit-description {
+  margin-bottom: 20px;
+  font-style: italic;
+  color: #666;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+.outfits-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* Empty State Styling */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #666;
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .outfits-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .outfit-details-content {
+    width: 95%;
+    padding: 15px;
+  }
+  
+  .outfit-item-detail {
+    flex-direction: column;
+  }
+  
+  .outfit-item-image {
+    width: 100%;
+    height: 180px;
+  }
+}
+/* Outfits section */
+.outfits-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.outfits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.outfit-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.outfit-name {
+  text-align: center;
+}
+
+.outfit-items-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.outfit-item-thumbnail {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid #e1e4e8;
+}
+
+.outfit-item-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.outfit-item-thumbnail[data-category="outerwear"] {
+  order: 1;
+}
+
+.outfit-item-thumbnail[data-category="tops"] {
+  order: 2;
+}
+
+.outfit-item-thumbnail[data-category="dresses"] {
+  order: 3;
+}
+
+.outfit-item-thumbnail[data-category="bottoms"] {
+  order: 4;
+}
+
+.outfit-item-thumbnail[data-category="shoes"] {
+  order: 5;
+}
+
+.outfit-item-thumbnail[data-category="accessories"] {
+  order: 6;
+}
+
+.outfit-footer {
+  padding: 1rem;
+  border-top: 1px solid #e1e4e8;
+  display: flex;
+  justify-content: space-between;
+}
+
+.outfit-occasion {
+  font-size: 0.875rem;
+  color: #586069;
+}
+
+/* Outfit Creator */
+#outfit-creator {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+  padding: 1.5rem;
+}
+
+.outfit-creator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.outfit-builder {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.outfit-items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.outfit-item-slot {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.outfit-item-slot:hover {
+  border-color: #4a6fa5;
+  background-color: rgba(74, 111, 165, 0.05);
+}
+
+.slot-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #586069;
+}
+
+.slot-content {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-content.empty {
+  color: #ccc;
+}
+
+.slot-content img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.outfit-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.item-selection-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.item-selection-panel:not(.hidden) {
+  display: flex;
+}
+
+.item-selection-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.item-selection-panel .close-panel {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.item-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+

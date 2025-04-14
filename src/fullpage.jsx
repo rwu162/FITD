@@ -21,6 +21,9 @@ function VirtualClosetFullPage() {
   const [activeTabId, setActiveTabId] = useState('wardrobe-tab-menu');
   const [sortBy, setSortBy] = useState('newest');
   const [showSortOptions, setShowSortOptions] = useState(false);
+  // Add state for selected outfit
+  const [selectedOutfit, setSelectedOutfit] = useState(null);
+  const [showOutfitDetailsModal, setShowOutfitDetailsModal] = useState(false);
 
   // Load wardrobe on component mount
   // Load wardrobe on component mount (runs once)
@@ -101,11 +104,28 @@ const handleSortOptionClick = (option) => {
   // Load outfits from Chrome storage
   const loadOutfits = () => {
     if (chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(['outfits'], (data) => {
-        setOutfits(data.outfits || []);
+      // Try to load from both possible storage keys
+      chrome.storage.local.get(['outfits', 'savedOutfits'], (data) => {
+        // Check if outfits exist in either location
+        if (data.savedOutfits && data.savedOutfits.length > 0) {
+          setOutfits(data.savedOutfits);
+          console.log('Loaded outfits from savedOutfits key:', data.savedOutfits.length);
+        } else if (data.outfits && data.outfits.length > 0) {
+          setOutfits(data.outfits);
+          console.log('Loaded outfits from outfits key:', data.outfits.length);
+          
+          // Optionally migrate the data to the new key
+          chrome.storage.local.set({ savedOutfits: data.outfits }, () => {
+            console.log('Migrated outfits to new storage key');
+          });
+        } else {
+          console.log('No outfits found in storage');
+          setOutfits([]);
+        }
       });
     } else {
       // For development outside extension
+      console.log('Chrome storage not available, using empty outfits array');
       setOutfits([]);
     }
   };
@@ -199,6 +219,18 @@ const handleSortOptionClick = (option) => {
     setShowOutfitCreator(false);
   };
 
+  // Open outfit details modal
+  const openOutfitDetails = (outfit) => {
+    setSelectedOutfit(outfit);
+    setShowOutfitDetailsModal(true);
+  };
+
+  // Close outfit details modal
+  const closeOutfitDetails = () => {
+    setShowOutfitDetailsModal(false);
+    setSelectedOutfit(null);
+  };
+
   const renderFilterControls = () => {
     return (
       <div className="filter-controls">
@@ -259,17 +291,44 @@ const handleSortOptionClick = (option) => {
     );
   };
   
-  // Save a new outfit
+  // Enhanced save outfit function
   const saveOutfit = (newOutfit) => {
-    const updatedOutfits = [...outfits, newOutfit];
+    // Create a complete outfit object with all necessary metadata
+    const completeOutfit = {
+      id: newOutfit.id || 'outfit_' + Date.now(), // Generate a unique ID if not present
+      name: newOutfit.name || 'My Outfit',
+      items: newOutfit.items,
+      reasoning: newOutfit.reasoning || '',
+      createdAt: newOutfit.createdAt || new Date().toISOString()
+    };
     
+    // Get existing outfits from storage
     if (chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ outfits: updatedOutfits }, () => {
-        setOutfits(updatedOutfits);
-        setShowOutfitCreator(false);
+      chrome.storage.local.get('savedOutfits', (data) => {
+        const savedOutfits = data.savedOutfits || [];
+        
+        // Add the new outfit to the beginning of the array
+        const updatedOutfits = [completeOutfit, ...savedOutfits];
+        
+        // Save back to storage
+        chrome.storage.local.set({ savedOutfits: updatedOutfits }, () => {
+          setOutfits(updatedOutfits);
+          setShowOutfitCreator(false);
+          
+          // Show a notification
+          if (chrome.notifications) {
+            chrome.notifications.create({
+              type: 'basic',
+              iconUrl: '/logo.png',
+              title: 'Outfit Saved',
+              message: `"${completeOutfit.name}" has been added to your collection!`
+            });
+          }
+        });
       });
     } else {
       // For development outside extension
+      const updatedOutfits = [completeOutfit, ...outfits];
       setOutfits(updatedOutfits);
       setShowOutfitCreator(false);
     }
@@ -281,14 +340,33 @@ const handleSortOptionClick = (option) => {
       const updatedOutfits = outfits.filter(outfit => outfit.id !== outfitId);
       
       if (chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ outfits: updatedOutfits }, () => {
+        chrome.storage.local.set({ savedOutfits: updatedOutfits }, () => {
           setOutfits(updatedOutfits);
+          // Close details modal if the deleted outfit was selected
+          if (selectedOutfit && selectedOutfit.id === outfitId) {
+            closeOutfitDetails();
+          }
         });
       } else {
         // For development outside extension
         setOutfits(updatedOutfits);
+        if (selectedOutfit && selectedOutfit.id === outfitId) {
+          closeOutfitDetails();
+        }
       }
     }
+  };
+
+  const formatPrice = (priceString) => {
+    if (!priceString) return '$0.00';
+    
+    // Extract numeric value from price string (handling different formats)
+    const priceText = priceString.toString();
+    const numericMatch = priceText.match(/(\d+(\.\d+)?)/);
+    const numericValue = numericMatch ? parseFloat(numericMatch[0]) : 0;
+    
+    // Format with two decimal places
+    return `$${numericValue.toFixed(2)}`;
   };
 
   // Render wardrobe items
@@ -296,7 +374,7 @@ const handleSortOptionClick = (option) => {
     if (loading) {
       return <div className="loading">Loading your wardrobe...</div>;
     }
-
+  
     if (wardrobe.length === 0) {
       return (
         <div className="empty-state">
@@ -304,7 +382,7 @@ const handleSortOptionClick = (option) => {
         </div>
       );
     }
-
+  
     if (filteredItems.length === 0) {
       return (
         <div className="empty-state">
@@ -312,7 +390,7 @@ const handleSortOptionClick = (option) => {
         </div>
       );
     }
-
+  
     return (
       <div className="items-grid-container">
         {filteredItems.map(item => (
@@ -327,10 +405,9 @@ const handleSortOptionClick = (option) => {
               />
             </div>
             <div className="item-details">
+              <p className="item-brand">{item.brand || 'BRAND'}</p>
               <h3>{item.title || 'Unknown Product'}</h3>
-              {item.brand && <p className="item-brand">{item.brand}</p>}
-              {item.price && <p className="item-price">{item.price}</p>}
-              <p className="item-category">Category: {item.category || 'Uncategorized'}</p>
+              <p className="item-price">{formatPrice(item.price)}</p>
             </div>
           </div>
         ))}
@@ -338,12 +415,18 @@ const handleSortOptionClick = (option) => {
     );
   };
 
-  // Render outfits
+  // Render outfits with enhanced clickable functionality
   const renderOutfits = () => {
     if (outfits.length === 0) {
       return (
         <div className="empty-state">
           <p>You haven't created any outfits yet. Start by clicking "Create New Outfit".</p>
+          <button 
+            className="primary-button create-outfit-button"
+            onClick={startOutfitCreation}
+          >
+            Create New Outfit
+          </button>
         </div>
       );
     }
@@ -351,7 +434,8 @@ const handleSortOptionClick = (option) => {
     return (
       <div className="outfits-grid">
         {outfits.map(outfit => {
-          const outfitItems = Object.entries(outfit.items)
+          // Get the items for this outfit
+          const outfitItems = Object.entries(outfit.items || {})
             .filter(([_, item]) => item !== null)
             .map(([type, item]) => (
               <div className="outfit-item-thumbnail" key={type} data-category={type}>
@@ -366,7 +450,11 @@ const handleSortOptionClick = (option) => {
             ));
 
           return (
-            <div className="outfit-card" key={outfit.id}>
+            <div 
+              className="outfit-card" 
+              key={outfit.id} 
+              onClick={() => openOutfitDetails(outfit)}
+            >
               <div className="outfit-name">
                 <h3>{outfit.name}</h3>
               </div>
@@ -376,7 +464,7 @@ const handleSortOptionClick = (option) => {
               <div className="outfit-footer">
                 <span className="outfit-created-date">{new Date(outfit.createdAt).toLocaleDateString()}</span>
                 <button className="icon-button delete-outfit" onClick={(e) => {
-                  e.stopPropagation();
+                  e.stopPropagation(); // Prevent triggering the card click
                   deleteOutfit(outfit.id);
                 }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -526,6 +614,88 @@ const handleSortOptionClick = (option) => {
     );
   };
 
+  // New function to render outfit details modal
+  const renderOutfitDetailsModal = () => {
+    if (!showOutfitDetailsModal || !selectedOutfit) return null;
+
+    // Format date if available
+    const formattedDate = selectedOutfit.createdAt 
+      ? new Date(selectedOutfit.createdAt).toLocaleDateString() 
+      : 'Unknown';
+
+    return (
+      <div className="modal outfit-details-modal">
+        <div className="modal-content outfit-details-content">
+          <div className="modal-header">
+            <h3>{selectedOutfit.name || 'Outfit Details'}</h3>
+            <button className="close-button" onClick={closeOutfitDetails}>×</button>
+          </div>
+          
+          {selectedOutfit.reasoning && (
+            <div className="outfit-description">
+              <p>{selectedOutfit.reasoning}</p>
+            </div>
+          )}
+          
+          <div className="outfit-items-detail">
+            {Object.entries(selectedOutfit.items || {})
+              .filter(([_, item]) => item !== null)
+              .map(([category, item]) => (
+                <div key={category} className="outfit-item-detail">
+                  <div className="outfit-item-image">
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title || category}
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="%23999"%3EImage not available%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="outfit-item-info">
+                    <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                    <p className="item-title">{item.title || 'Unknown Item'}</p>
+                    
+                    {item.brand && <p className="item-brand">Brand: {item.brand}</p>}
+                    {item.price && <p className="item-price">Price: {item.price}</p>}
+                    {item.color && <p className="item-color">Color: {item.color}</p>}
+                    {item.material && <p className="item-material">Material: {item.material}</p>}
+                    
+                    {item.description && (
+                      <div className="item-description">
+                        <p>{item.description}</p>
+                      </div>
+                    )}
+                    
+                    {item.url && (
+                      <a 
+                        href={item.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="item-link secondary-button"
+                      >
+                        View Original
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+          
+          <div className="modal-footer">
+            <span className="outfit-date">Created: {formattedDate}</span>
+            <button 
+              className="danger-button"
+              onClick={() => deleteOutfit(selectedOutfit.id)}
+            >
+              Delete Outfit
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div id="app" className='fullscreen-app'>
       {/* Navigation Bar */}
@@ -585,12 +755,6 @@ const handleSortOptionClick = (option) => {
                 switchTab('outfit', 'outfits-view');
               }}>Outfits</a>
             </li>
-            <li id="add-tab-menu" className={`heart ${activeTabId === 'add-tab-menu' ? 'active' : ''}`}>
-              <a href="#add" onClick={(e) => {
-                e.preventDefault();
-                switchTab('add', 'add-view');
-              }}>&#9825;</a>
-            </li>
           </ul>
         </div>
       </nav>
@@ -630,6 +794,144 @@ const handleSortOptionClick = (option) => {
       
       {/* Item Details Modal */}
       {renderItemModal()}
+      
+      {/* Outfit Details Modal */}
+      {renderOutfitDetailsModal()}
+      
+      {/* Add CSS for outfit details modal */}
+      <style jsx>{`
+        /* Outfit Details Modal Styling */
+        .outfit-details-modal {
+          z-index: 1001; /* Higher than regular modal */
+        }
+        
+        .outfit-details-content {
+          max-width: 800px;
+          width: 90%;
+          max-height: 85vh;
+        }
+        
+        .outfit-description {
+          margin-bottom: 20px;
+          font-style: italic;
+          color: #666;
+          padding: 10px;
+          background-color: #f9f9f9;
+          border-radius: 6px;
+        }
+        
+        .outfit-items-detail {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        .outfit-item-detail {
+          display: flex;
+          border: 1px solid #eee;
+          border-radius: 8px;
+          overflow: hidden;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .outfit-item-detail:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .outfit-item-image {
+          width: 200px;
+          height: 200px;
+          overflow: hidden;
+          background-color: #f7f7f7;
+        }
+        
+        .outfit-item-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .outfit-item-info {
+          flex: 1;
+          padding: 16px;
+        }
+        
+        .outfit-item-info h4 {
+          margin: 0 0 8px 0;
+          font-size: 14px;
+          text-transform: uppercase;
+          color: #888;
+        }
+        
+        .item-title {
+          font-size: 16px;
+          font-weight: 600;
+          margin: 0 0 12px 0;
+        }
+        
+        .item-brand, .item-price, .item-color, .item-material {
+          font-size: 14px;
+          margin: 4px 0;
+          color: #555;
+        }
+        
+        .item-description {
+          font-size: 14px;
+          margin-top: 10px;
+          color: #666;
+        }
+        
+        .item-link {
+          display: inline-block;
+          margin-top: 12px;
+          text-decoration: none;
+        }
+        
+        .outfit-date {
+          color: #888;
+          font-size: 14px;
+        }
+        
+        /* Make outfit cards clickable */
+        .outfit-card {
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .outfit-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .create-outfit-button {
+          margin-left: auto;
+        }
+        
+        .outfits-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        
+        /* Responsive design for mobile */
+        @media (max-width: 768px) {
+          .outfit-item-detail {
+            flex-direction: column;
+          }
+          
+          .outfit-item-image {
+            width: 100%;
+            height: 180px;
+          }
+          
+          .outfit-details-content {
+            width: 95%;
+            padding: 15px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
