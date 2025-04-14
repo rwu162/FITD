@@ -8,7 +8,55 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increase limit for larger requests
+
+// Add response caching middleware
+const responseCache = new Map();
+const CACHE_TTL = 3600000; // Cache TTL: 1 hour
+
+function cacheMiddleware(req, res, next) {
+  // Only cache POST requests to specific endpoints
+  if (req.method !== 'POST') return next();
+  
+  const endpoint = req.path;
+  if (!['/api/extract-product', '/api/generate-outfit'].includes(endpoint)) return next();
+  
+  // Create a cache key from the request body
+  const cacheKey = `${endpoint}:${JSON.stringify(req.body)}`;
+  
+  // Check if we have a cached response
+  const cachedResponse = responseCache.get(cacheKey);
+  if (cachedResponse) {
+    console.log(`Cache hit for ${endpoint}`);
+    return res.json(cachedResponse);
+  }
+  
+  // Store the original JSON method
+  const originalJson = res.json;
+  
+  // Override the res.json method to cache the response
+  res.json = function(data) {
+    // Store in cache if successful
+    if (data.success) {
+      responseCache.set(cacheKey, data);
+      
+      // Set cache expiration
+      setTimeout(() => {
+        responseCache.delete(cacheKey);
+      }, CACHE_TTL);
+      
+      console.log(`Cached response for ${endpoint}`);
+    }
+    
+    // Call the original method
+    return originalJson.call(this, data);
+  };
+  
+  next();
+}
+
+// Use the caching middleware
+app.use(cacheMiddleware);
 
 // OpenAI API proxy endpoint for product extraction
 app.post('/api/extract-product', async (req, res) => {
@@ -48,7 +96,8 @@ app.post('/api/extract-product', async (req, res) => {
             content: prompt
           }
         ],
-        temperature: 0.3
+        temperature: 0.3,
+        max_tokens: 500 // Limit token usage for faster responses
       },
       {
         headers: {
@@ -80,6 +129,7 @@ app.get('/', (req, res) => {
   res.send('OpenAI API Proxy Server is running');
 });
 
+// Modified outfit generation endpoint with optimizations
 app.post('/api/generate-outfit', async (req, res) => {
   try {
     // Get the prompt from the request
@@ -102,7 +152,7 @@ app.post('/api/generate-outfit', async (req, res) => {
       });
     }
     
-    // Forward the request to OpenAI
+    // Forward the request to OpenAI with optimized parameters
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
@@ -110,20 +160,24 @@ app.post('/api/generate-outfit', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a professional fashion stylist who creates outfit recommendations based on available wardrobe items.'
+            content: 'You are a professional fashion stylist who creates outfit recommendations based on available wardrobe items. Be concise and respond only with the required JSON format.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7
+        temperature: 0.5, // Slightly lower temperature for more consistent responses
+        max_tokens: 800, // Limit token usage for faster responses
+        presence_penalty: 0.1, // Slight penalty to avoid repetitive responses
+        frequency_penalty: 0.1 // Slight penalty to avoid repetitive responses
       },
       {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${OPENAI_API_KEY}`
-        }
+        },
+        timeout: 15000 // 15 second timeout for faster error recovery
       }
     );
     

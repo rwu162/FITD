@@ -271,82 +271,112 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+const outfitCache = new Map();
+const OUTFIT_CACHE_TTL = 3600000;
 // Forward a message to the AI service
 function forwardToAIService(message, sendResponse) {
   try {
     console.log('Attempting to generate outfit with AI:', message);
     
     // Process the request directly in the background script
-    // This avoids the message passing issues
     const wardrobeItems = message.wardrobe || [];
     const userPrompt = message.options?.userPrompt || "Create a casual everyday outfit";
+    
+    // Create a cache key from the prompt and wardrobe
+    const cacheKey = JSON.stringify({
+      prompt: userPrompt,
+      wardrobe: wardrobeItems.map(item => item.addedAt) // Just use IDs for faster comparison
+    });
+    
+    // Check if we have a cached response
+    const cachedOutfit = outfitCache.get(cacheKey);
+    if (cachedOutfit) {
+      console.log('Using cached outfit result');
+      sendResponse(cachedOutfit);
+      return true;
+    }
     
     // Initialize a fallback outfit in case AI processing fails
     let fallbackOutfit = createFallbackOutfit(wardrobeItems);
     
-    // Try to use the AI service loaded as content script
-    if (typeof aiOutfitService !== 'undefined') {
-      // Use the service instance directly
-      aiOutfitService.generateOutfit(wardrobeItems, {
-        userPrompt: userPrompt
-      }).then(result => {
-        console.log('AI outfit generation successful:', result);
-        sendResponse(result);
-      }).catch(error => {
-        console.error('Error in AI outfit generation:', error);
-        sendResponse({
-          success: true, // Return success with fallback
-          outfit: fallbackOutfit,
-          message: 'Used fallback outfit generator. ' + error.message
+    // Create a loading indicator
+    const loadingResponse = {
+      success: true,
+      isLoading: true,
+      message: "Generating your outfit..."
+    };
+    
+    // Send immediate loading response
+    sendResponse(loadingResponse);
+    
+    // Then proceed with the actual request
+    fetch('https://fashiondam.onrender.com/api/generate-outfit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: constructPromptFromUserInput(wardrobeItems, userPrompt),
+        wardrobe: wardrobeItems
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        // Parse the server response
+        const outfit = parseOutfitResponse(data.result, {
+          tops: wardrobeItems.filter(item => item.category === 'tops'),
+          bottoms: wardrobeItems.filter(item => item.category === 'bottoms'),
+          shoes: wardrobeItems.filter(item => item.category === 'shoes'),
+          outerwear: wardrobeItems.filter(item => item.category === 'outerwear'),
+          dresses: wardrobeItems.filter(item => item.category === 'dresses'),
+          accessories: wardrobeItems.filter(item => item.category === 'accessories')
         });
-      });
-    } else {
-      // If aiOutfitService is not available directly, try making a POST request to the backend
-      fetch('https://fashiondam.onrender.com/api/generate-outfit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: constructPromptFromUserInput(wardrobeItems, userPrompt),
-          wardrobe: wardrobeItems
-        })
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data.success) {
-          // Parse the server response
-          const outfit = parseOutfitResponse(data.result, {
-            tops: wardrobeItems.filter(item => item.category === 'tops'),
-            bottoms: wardrobeItems.filter(item => item.category === 'bottoms'),
-            shoes: wardrobeItems.filter(item => item.category === 'shoes'),
-            outerwear: wardrobeItems.filter(item => item.category === 'outerwear'),
-            dresses: wardrobeItems.filter(item => item.category === 'dresses'),
-            accessories: wardrobeItems.filter(item => item.category === 'accessories')
-          });
-          
-          sendResponse({
-            success: true,
-            outfit: outfit
-          });
-        } else {
-          throw new Error(data.error || 'Unknown server error');
-        }
-      })
-      .catch(error => {
-        console.error('Error in server fetch:', error);
-        sendResponse({
-          success: true, // Return success with fallback
-          outfit: fallbackOutfit,
-          message: 'Used fallback outfit generator. ' + error.message
+        
+        const finalResponse = {
+          success: true,
+          outfit: outfit,
+          isLoading: false
+        };
+        
+        // Store in cache
+        outfitCache.set(cacheKey, finalResponse);
+        
+        // Set cache expiration
+        setTimeout(() => {
+          outfitCache.delete(cacheKey);
+        }, OUTFIT_CACHE_TTL);
+        
+        // Send the final result
+        chrome.runtime.sendMessage({
+          action: 'outfitGenerated',
+          response: finalResponse
         });
+      } else {
+        throw new Error(data.error || 'Unknown server error');
+      }
+    })
+    .catch(error => {
+      console.error('Error in server fetch:', error);
+      
+      const errorResponse = {
+        success: true, // Return success with fallback
+        outfit: fallbackOutfit,
+        message: 'Used fallback outfit generator. ' + error.message,
+        isLoading: false
+      };
+      
+      // Send the fallback result
+      chrome.runtime.sendMessage({
+        action: 'outfitGenerated',
+        response: errorResponse
       });
-    }
+    });
     
     return true; // Indicates we'll respond asynchronously
   } catch (error) {
@@ -356,10 +386,16 @@ function forwardToAIService(message, sendResponse) {
     const fallbackOutfit = createFallbackOutfit(message.wardrobe || []);
     
     // Return a successful response with the fallback outfit
-    sendResponse({
+    const finalResponse = {
       success: true,
       outfit: fallbackOutfit,
-      message: 'Used fallback outfit generator due to error: ' + error.message
+      message: 'Used fallback outfit generator due to error: ' + error.message,
+      isLoading: false
+    };
+    
+    chrome.runtime.sendMessage({
+      action: 'outfitGenerated',
+      response: finalResponse
     });
   }
 }
@@ -415,23 +451,24 @@ function constructPromptFromUserInput(wardrobeItems, userPrompt) {
   const dresses = wardrobeItems.filter(item => item.category === 'dresses');
   const accessories = wardrobeItems.filter(item => item.category === 'accessories');
   
-  // Create a simplified view of each item
+  // Create a simplified view of each item - only include essential data
   const simplifyItem = (item) => ({
     id: item.addedAt,
     title: item.title || 'Unnamed item',
     brand: item.brand || '',
-    color: extractColorFromTitle(item.title) || 'unknown',
-    description: item.description ? item.description.substring(0, 100) : ''
+    color: extractColorFromTitle(item.title) || 'unknown'
   });
   
-  // Include all available categories
+  // Include all available categories, but limit items if there are too many
+  const MAX_ITEMS_PER_CATEGORY = 10; // Limit items per category for faster processing
+  
   const allItems = {
-    tops: tops.length > 0 ? tops.map(simplifyItem) : [],
-    bottoms: bottoms.length > 0 ? bottoms.map(simplifyItem) : [],
-    shoes: shoes.length > 0 ? shoes.map(simplifyItem) : [],
-    outerwear: outerwear.length > 0 ? outerwear.map(simplifyItem) : [],
-    dresses: dresses.length > 0 ? dresses.map(simplifyItem) : [],
-    accessories: accessories.length > 0 ? accessories.map(simplifyItem) : []
+    tops: tops.length > 0 ? tops.slice(0, MAX_ITEMS_PER_CATEGORY).map(simplifyItem) : [],
+    bottoms: bottoms.length > 0 ? bottoms.slice(0, MAX_ITEMS_PER_CATEGORY).map(simplifyItem) : [],
+    shoes: shoes.length > 0 ? shoes.slice(0, MAX_ITEMS_PER_CATEGORY).map(simplifyItem) : [],
+    outerwear: outerwear.length > 0 ? outerwear.slice(0, MAX_ITEMS_PER_CATEGORY).map(simplifyItem) : [],
+    dresses: dresses.length > 0 ? dresses.slice(0, MAX_ITEMS_PER_CATEGORY).map(simplifyItem) : [],
+    accessories: accessories.length > 0 ? accessories.slice(0, MAX_ITEMS_PER_CATEGORY).map(simplifyItem) : []
   };
   
   // Filter out empty categories
@@ -442,8 +479,8 @@ function constructPromptFromUserInput(wardrobeItems, userPrompt) {
     }
   });
   
-  // Create the prompt with user's input
-  let prompt = `You are a professional fashion stylist. ${userPrompt}. Create an outfit from the following wardrobe items that meets this request. Select the best matching items that coordinate well together.\n\n`;
+  // Create a more concise prompt
+  let prompt = `You are a professional fashion stylist. Task: ${userPrompt}\n\nAvailable wardrobe items:\n\n`;
   
   // Add items by category
   Object.entries(itemsToInclude).forEach(([category, items]) => {
@@ -454,13 +491,13 @@ function constructPromptFromUserInput(wardrobeItems, userPrompt) {
     prompt += '\n';
   });
   
-  // Add instructions for the response format
-  prompt += `Select appropriate items to create a cohesive outfit that matches the request. You can select 0 or 1 item from each category. Respond in JSON format like this:
+  // Add instructions for the response format - be very explicit about format to reduce token usage
+  prompt += `Respond ONLY with valid JSON like this:
 {
   "outfit": {
     ${Object.keys(itemsToInclude).map(cat => `"${cat}": "ID_OF_SELECTED_ITEM_OR_NULL"`).join(',\n    ')}
   },
-  "reasoning": "Brief explanation of why these items work well together and how they fulfill the request"
+  "reasoning": "Brief explanation (max 50 words)"
 }`;
   
   return prompt;
