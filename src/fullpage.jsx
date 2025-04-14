@@ -436,12 +436,6 @@ const handleSortOptionClick = (option) => {
       return (
         <div className="empty-state">
           <p>You haven't created any outfits yet. Start by going to STYLER.</p>
-          <button 
-            className="primary-button create-outfit-button"
-            onClick={startOutfitCreation}
-          >
-            Create New Outfit
-          </button>
         </div>
       );
     }

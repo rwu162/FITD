@@ -116,6 +116,18 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     const imageUrl = info.srcUrl;
     
     if (imageUrl) {
+      // Show immediate notification
+      try {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('logo.png') || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFeAKJJ0W65QAAAABJRU5ErkJggg==',
+          title: 'Virtual Closet',
+          message: 'Processing item...'
+        });
+      } catch (e) {
+        console.error('Notification error:', e);
+      }
+      
       // Create a basic product info object with what we know for sure
       const basicProductInfo = {
         title: tab.title || 'Unknown Product',
@@ -124,24 +136,36 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         timestamp: new Date().toISOString()
       };
       
-      // First try to extract detailed info from the page
-      try {
-        // Extract text from the page using executeScript
+      // First try to extract visible text from the page
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: getVisibleText
+      }, (results) => {
+        let pageText = '';
+        
+        if (!chrome.runtime.lastError && results && results[0]) {
+          pageText = results[0].result || '';
+          console.log('Successfully extracted text with length:', pageText.length);
+        } else {
+          console.warn('Error extracting text:', chrome.runtime.lastError);
+        }
+        
+        // Next extract detailed product info
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
           function: extractPageInfoForProduct,
           args: [imageUrl]
-        }, (results) => {
+        }, (infoResults) => {
           // Check if we got page info successfully
-          if (chrome.runtime.lastError) {
+          if (chrome.runtime.lastError || !infoResults || !infoResults[0]) {
             console.warn('Could not extract page info:', chrome.runtime.lastError);
-            // Just use the server-side extraction with basic info
-            extractProductServerSide(tab, imageUrl, basicProductInfo);
+            // Process with just the text and basic info
+            processWithServerExtraction(basicProductInfo, pageText, imageUrl, tab.url);
             return;
           }
           
           // Get the extracted info
-          const extractedInfo = results[0]?.result;
+          const extractedInfo = infoResults[0].result;
           if (extractedInfo && typeof extractedInfo === 'object') {
             console.log('Successfully extracted page info:', extractedInfo);
             
@@ -151,22 +175,116 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
               ...extractedInfo
             };
             
-            // Process with server-side enhancement
-            extractProductServerSide(tab, imageUrl, enrichedInfo);
+            // Process with the server using both detailed info and the extracted text
+            processWithServerExtraction(enrichedInfo, pageText, imageUrl, tab.url);
           } else {
-            // If extraction failed, use the basic info
+            // If extraction failed, use the basic info and text
             console.warn('Page info extraction returned invalid data');
-            extractProductServerSide(tab, imageUrl, basicProductInfo);
+            processWithServerExtraction(basicProductInfo, pageText, imageUrl, tab.url);
           }
         });
-      } catch (error) {
-        console.error('Error during execution:', error);
-        // Fall back to server-side extraction with basic info
-        extractProductServerSide(tab, imageUrl, basicProductInfo);
-      }
+      });
     }
   }
 });
+
+function processWithServerExtraction(productInfo, pageText, imageUrl, pageUrl) {
+  // Now use our server API to extract more detailed product info
+  const API_PROXY_URL = 'https://fashiondam.onrender.com/api/extract-product';
+  
+  // Create the prompt with our page text
+  const prompt = constructPromptFromPage(pageText, imageUrl, pageUrl);
+  
+  console.log('Sending API request for product extraction');
+  
+  fetch(API_PROXY_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      prompt: prompt
+    })
+  })
+  .then(response => {
+    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+    return response.json();
+  })
+  .then(data => {
+    console.log('Received API response:', data);
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Unknown error from API');
+    }
+    
+    // Try to parse the AI response
+    try {
+      const jsonMatch = data.result.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('Could not find JSON in API response');
+        throw new Error('Invalid API response format');
+      }
+      
+      const jsonString = jsonMatch[0];
+      console.log('Extracted JSON from response:', jsonString);
+      
+      const productData = JSON.parse(jsonString);
+      console.log('Parsed product data:', productData);
+      
+      // Get domain for brand fallback
+      let domain = '';
+      try {
+        const url = new URL(pageUrl);
+        domain = url.hostname.replace('www.', '').split('.')[0];
+        if (domain) {
+          domain = domain.charAt(0).toUpperCase() + domain.slice(1);
+        }
+      } catch (e) {
+        console.error('Error parsing URL:', e);
+      }
+      
+      // If we didn't get a brand from the API but have the domain, use that as a fallback
+      if ((!productData.brand || productData.brand === null) && domain) {
+        productData.brand = domain;
+        console.log('Used domain for brand:', productData.brand);
+      }
+      
+      // Merge with our existing product info, but prefer AI data for missing or null fields
+      const finalProduct = {
+        ...productInfo
+      };
+      
+      // Only add properties from AI if they're not null and we don't already have them
+      Object.entries(productData).forEach(([key, value]) => {
+        if (value !== null && value !== '') {
+          // Override if we didn't have this property or if our value was empty
+          if (!finalProduct[key] || finalProduct[key] === '') {
+            finalProduct[key] = value;
+          }
+        }
+      });
+      
+      // Always ensure these critical fields
+      finalProduct.imageUrl = productInfo.imageUrl || imageUrl;
+      finalProduct.url = productInfo.url || pageUrl;
+      
+      console.log('Final product data to be saved:', finalProduct);
+      
+      // Process the product
+      processProductInfo(finalProduct);
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      // Fall back to existing info
+      processProductInfo(productInfo);
+    }
+  })
+  .catch(error => {
+    console.error('Error in server-side extraction:', error);
+    // Fall back to existing info but log clearly that we're using fallback
+    console.warn('Using fallback product info due to API error');
+    processProductInfo(productInfo);
+  });
+}
 
 // Function to extract page information - this runs directly in the page context
 function extractPageInfoForProduct(imageUrl) {
@@ -175,29 +293,38 @@ function extractPageInfoForProduct(imageUrl) {
       title: document.title || '',
       description: '',
       price: '',
-      brand: ''
+      brand: '',
+      color: ''
     };
     
     // Basic selectors for common product information
     const selectors = {
       productTitle: [
         'h1', '.product-title', '.product-name', '.pdp-title',
-        '[class*="productName"]', '[class*="product-title"]'
+        '[class*="productName"]', '[class*="product-title"]',
+        '.product-item-headline', '.product-heading', 'h1.heading'
       ],
       productPrice: [
         '.price', '.product-price', 'span.price', 'div.price',
         'p.price', '[class*="productPrice"]', '[class*="price"]',
-        '.offer-price', '.current-price', '.sale-price'
+        '.offer-price', '.current-price', '.sale-price', '.pdp-price',
+        '.discount-price', '.promo-price', '.special-price',
+        '[data-price]', '[data-test-id*="price"]', '.product-price-value'
       ],
       productBrand: [
         '.brand', '.product-brand', '.vendor', '.manufacturer',
         '.product-vendor', '.designer', '[class*="Brand"]',
-        'meta[property="og:brand"]'
+        'meta[property="og:brand"]', '.brand-name', 'a.brand'
       ],
       productDescription: [
         '.product-description', '.description', '.details', '#description',
         '[class*="description"]', '[class*="product-detail"]',
-        'meta[name="description"]', 'meta[property="og:description"]'
+        'meta[name="description"]', 'meta[property="og:description"]',
+        '.product-information', '.product-details', '.product-info'
+      ],
+      productColor: [
+        '.color', '.product-color', '[class*="color"]', '.selected-color',
+        '[data-color]', '[data-test-id*="color"]', '.color-name'
       ]
     };
     
@@ -210,17 +337,37 @@ function extractPageInfoForProduct(imageUrl) {
       }
     }
     
-    // Extract price
+    // Extract price - specifically look for currency symbols
+    let foundPrice = false;
     for (const selector of selectors.productPrice) {
       const elements = document.querySelectorAll(selector);
       for (const element of elements) {
         const text = element.textContent.trim();
         if (text && /[\$\€\£\¥\₹\₩\₣]|\d+\.\d{2}|\d+\,\d{2}/.test(text)) {
           productInfo.price = text;
+          foundPrice = true;
           break;
         }
       }
-      if (productInfo.price) break;
+      if (foundPrice) break;
+    }
+    
+    // If no price found in specific selectors, try a broader approach
+    if (!foundPrice) {
+      // Find all elements with text content
+      const allElements = document.querySelectorAll('*');
+      for (const element of allElements) {
+        if (element.childNodes.length === 1 && element.childNodes[0].nodeType === Node.TEXT_NODE) {
+          const text = element.textContent.trim();
+          // Look for currency symbols or price patterns
+          if (/^[\$\€\£\¥\₹\₩\₣]\s?\d+(\.\d{2})?$/.test(text) || 
+              /^\d+[\.\,]\d{2}\s?[\$\€\£\¥\₹\₩\₣]$/.test(text)) {
+            productInfo.price = text;
+            foundPrice = true;
+            break;
+          }
+        }
+      }
     }
     
     // Extract brand
@@ -242,6 +389,27 @@ function extractPageInfoForProduct(imageUrl) {
       }
     }
     
+    // Extract color
+    for (const selector of selectors.productColor) {
+      const element = document.querySelector(selector);
+      if (element) {
+        let colorText = "";
+        
+        if (element.tagName === 'META' && element.content) {
+          colorText = element.content.trim();
+        } else if (element.textContent.trim()) {
+          colorText = element.textContent.trim();
+        } else if (element.getAttribute('data-color')) {
+          colorText = element.getAttribute('data-color');
+        }
+        
+        if (colorText && colorText.length < 30) {
+          productInfo.color = colorText;
+          break;
+        }
+      }
+    }
+    
     // Extract description
     for (const selector of selectors.productDescription) {
       const element = document.querySelector(selector);
@@ -255,29 +423,6 @@ function extractPageInfoForProduct(imageUrl) {
         if (productInfo.description) break;
       }
     }
-    
-    // Get visible text for AI processing
-    const textElements = [];
-    
-    // Get meta descriptions
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription && metaDescription.content) {
-      textElements.push('META: ' + metaDescription.content);
-    }
-    
-    // Get headings
-    const headings = [...document.querySelectorAll('h1, h2')].map(h => h.textContent.trim());
-    if (headings.length > 0) {
-      textElements.push('HEADINGS: ' + headings.join(' | '));
-    }
-    
-    // Extract some visible text from relevant elements
-    const relevantElements = document.querySelectorAll('.description, .details, .product-info, .product-details');
-    for (const element of relevantElements) {
-      textElements.push(element.textContent.trim());
-    }
-    
-    productInfo.extractedText = textElements.join('\n\n').substring(0, 5000);
     
     return productInfo;
   } catch (error) {
@@ -491,17 +636,50 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function extractProductServerSide(tab, imageUrl, productInfo) {
   console.log('Extracting product data server-side for:', imageUrl);
   
-  // Now use our server API to extract more detailed product info
+  // Always use the server API to extract more detailed product info
   const API_PROXY_URL = 'https://fashiondam.onrender.com/api/extract-product';
   
-  // Create a prompt for the AI
-  const pageText = productInfo.extractedText || '';
-  const prompt = constructPromptFromPage(pageText, imageUrl, tab.url);
+  // Create a robust prompt with all information we have
+  let pageText = '';
   
-  // Delete the extracted text before sending (no need to store it)
   if (productInfo.extractedText) {
+    pageText = productInfo.extractedText;
+    // Delete the extracted text before sending (no need to store it)
     delete productInfo.extractedText;
   }
+  
+  // Construct a detailed prompt with everything we know
+  const prompt = `
+You are an AI assistant specialized in extracting product information from e-commerce websites. 
+I need you to analyze the following information about a clothing item and extract structured product details.
+
+Extract the following information in JSON format:
+1. title: The name of the product
+2. brand: The brand name if available
+3. price: The price with currency symbol if available
+4. originalPrice: If there's a sale, the original price before discount
+5. color: The color of the product if mentioned
+6. description: A concise description of the product (max 200 characters)
+7. detailedDescription: A more complete description with features, material, etc. (max 1000 characters)
+8. material: The fabric/material composition if available
+9. category: Identify which category this belongs to: tops, bottoms, dresses, outerwear, shoes, accessories, or other
+
+IMPORTANT: Use these details that we already know:
+- Image URL: ${imageUrl}
+- Page URL: ${productInfo.url || tab.url}
+- Page Title: ${productInfo.title || tab.title}
+${productInfo.brand ? '- Brand: ' + productInfo.brand : ''}
+${productInfo.price ? '- Price: ' + productInfo.price : ''}
+${productInfo.description ? '- Description: ' + productInfo.description : ''}
+
+Respond ONLY with valid JSON without any other text or explanations.
+If you can't determine a specific field, use null for that field.
+
+Here is additional text from the webpage:
+${pageText}`;
+
+  // Log the API request to help with debugging
+  console.log('Sending API request for product extraction');
   
   fetch(API_PROXY_URL, {
     method: 'POST',
@@ -513,27 +691,46 @@ function extractProductServerSide(tab, imageUrl, productInfo) {
     })
   })
   .then(response => {
-    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+    if (!response.ok) {
+      console.error(`API Error: ${response.status}`);
+      throw new Error(`API Error: ${response.status}`);
+    }
     return response.json();
   })
   .then(data => {
+    console.log('Received API response:', data);
+    
     if (!data.success) {
+      console.error('API reported error:', data.error);
       throw new Error(data.error || 'Unknown error from API');
     }
     
     // Try to parse the AI response
     try {
       const jsonMatch = data.result.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : data.result;
-      const productData = JSON.parse(jsonString);
+      if (!jsonMatch) {
+        console.error('Could not find JSON in API response');
+        throw new Error('Invalid API response format');
+      }
       
-      // Merge with our existing product info, with AI data taking precedence for missing fields
+      const jsonString = jsonMatch[0];
+      console.log('Extracted JSON from response:', jsonString);
+      
+      const productData = JSON.parse(jsonString);
+      console.log('Parsed product data:', productData);
+      
+      // Merge with our existing product info, but prefer AI data
       const finalProduct = {
         ...productInfo,
         ...Object.fromEntries(
           Object.entries(productData).filter(([_, v]) => v !== null && v !== '')
-        )
+        ),
+        // Always keep these from the original product info
+        imageUrl: productInfo.imageUrl || imageUrl,
+        url: productInfo.url || tab.url
       };
+      
+      console.log('Final product data to be saved:', finalProduct);
       
       // Process the product
       processProductInfo(finalProduct);
@@ -545,7 +742,8 @@ function extractProductServerSide(tab, imageUrl, productInfo) {
   })
   .catch(error => {
     console.error('Error in server-side extraction:', error);
-    // Fall back to existing info
+    // Fall back to existing info but log clearly that we're using fallback
+    console.warn('Using fallback product info due to API error');
     processProductInfo(productInfo);
   });
 }
@@ -1052,7 +1250,9 @@ function inferCategory(title, description) {
   const text = (title + ' ' + (description || '')).toLowerCase();
   
   if (text.includes('shirt') || text.includes('top') || text.includes('tee') || 
-      text.includes('sweater') || text.includes('blouse') || text.includes('tank')) {
+      text.includes('sweater') || text.includes('blouse') || text.includes('tank') || 
+      text.includes('jacket') || text.includes('coat') || text.includes('hoodie') || 
+      text.includes('cardigan') || text.includes('blazer')) {
     return 'tops';
   } 
   else if (text.includes('pant') || text.includes('jean') || text.includes('skirt') || 
@@ -1065,10 +1265,6 @@ function inferCategory(title, description) {
   } 
   else if (text.includes('dress')) {
     return 'dresses';
-  } 
-  else if (text.includes('jacket') || text.includes('coat') || text.includes('hoodie') || 
-           text.includes('cardigan') || text.includes('blazer')) {
-    return 'outerwear';
   } 
   else if (text.includes('hat') || text.includes('scarf') || text.includes('glove') || 
            text.includes('sock') || text.includes('belt') || text.includes('jewelry') || 
@@ -1111,18 +1307,18 @@ function processProductInfo(response, sendResponse = null) {
       }
     }
     
-    // Add category and timestamp to the product if not already present
+    // Add category and timestamp to the product
     const productWithCategory = {
       ...response,
       category,
       addedAt: response.addedAt || new Date().toISOString()
     };
     
-    // Get all saved wardrobe data
+    // Store in Chrome storage
     chrome.storage.local.get('wardrobe', (data) => {
       const wardrobe = data.wardrobe || [];
       
-      // Check if this item already exists (based on URL and image)
+      // Check if this item already exists
       const existingItemIndex = wardrobe.findIndex(item => 
         item.imageUrl === productWithCategory.imageUrl && 
         item.url === productWithCategory.url
@@ -1131,12 +1327,8 @@ function processProductInfo(response, sendResponse = null) {
       let updatedWardrobe;
       if (existingItemIndex !== -1) {
         // Update existing item
-        const updatedItem = {
-          ...wardrobe[existingItemIndex],
-          ...productWithCategory
-        };
-        updatedWardrobe = [...wardrobe];
-        updatedWardrobe[existingItemIndex] = updatedItem;
+        wardrobe[existingItemIndex] = productWithCategory;
+        updatedWardrobe = [...wardrobe]; // Create new array to ensure changes are detected
         console.log('Updated existing wardrobe item');
       } else {
         // Add new item
@@ -1144,15 +1336,26 @@ function processProductInfo(response, sendResponse = null) {
         console.log('Added new wardrobe item');
       }
       
-      // Save the updated wardrobe
       chrome.storage.local.set({ wardrobe: updatedWardrobe }, () => {
         // Show a notification to the user
-        chrome.notifications.create({
-          type: 'basic',
-          iconUrl: '/vite.svg',
-          title: 'Virtual Closet',
-          message: existingItemIndex !== -1 ? 'Item updated in your wardrobe!' : 'Item added to your wardrobe!'
-        });
+        try {
+          // Try to get a valid icon
+          let iconUrl = chrome.runtime.getURL('logo.png');
+          
+          // As a fallback, use a simple data URI
+          if (!iconUrl) {
+            iconUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFeAKJJ0W65QAAAABJRU5ErkJggg==';
+          }
+          
+          chrome.notifications.create({
+            type: 'basic',
+            iconUrl: iconUrl,
+            title: 'Virtual Closet',
+            message: existingItemIndex !== -1 ? 'Item updated in your wardrobe!' : 'Item added to your wardrobe!'
+          });
+        } catch (e) {
+          console.error('Error showing notification:', e);
+        }
         
         if (sendResponse) {
           sendResponse({ 
@@ -1163,44 +1366,7 @@ function processProductInfo(response, sendResponse = null) {
         }
         
         // Broadcast update to all extension pages
-        try {
-          // First broadcast via runtime messaging
-          chrome.runtime.sendMessage({
-            action: 'wardrobeUpdated',
-            wardrobe: updatedWardrobe
-          }).catch(error => {
-            // Ignore errors, as there might not be any listeners
-            console.log('No listeners for wardrobeUpdated message');
-          });
-          
-          // Then try to find any extension tabs to update
-          chrome.tabs.query({}, (tabs) => {
-            const extensionUrls = [
-              chrome.runtime.getURL('fullpage.html'),
-              chrome.runtime.getURL('category-selector.html'),
-              chrome.runtime.getURL('styler.html')
-            ];
-            
-            tabs.forEach((tab) => {
-              // Check if this tab is an extension page
-              if (tab.url && extensionUrls.some(url => tab.url.startsWith(url))) {
-                try {
-                  chrome.tabs.sendMessage(tab.id, {
-                    action: 'wardrobeUpdated',
-                    wardrobe: updatedWardrobe
-                  }).catch(() => {
-                    // Ignore errors for individual tabs
-                  });
-                } catch (e) {
-                  // Ignore any errors
-                }
-              }
-            });
-          });
-        } catch (e) {
-          // Ignore any broadcasting errors
-          console.log('Error broadcasting update:', e);
-        }
+        broadcastWardrobeUpdate(updatedWardrobe);
       });
     });
   } else if (sendResponse) {
@@ -1211,16 +1377,24 @@ function processProductInfo(response, sendResponse = null) {
 }
 
 // Function to broadcast wardrobe updates to all extension pages
-function broadcastWardrobeUpdate(wardrobe) {
-  console.log('Broadcasting wardrobe update to all extension pages');
+// Modified broadcasting function
+function broadcastWardrobeUpdate(updatedWardrobe) {
+  console.log('Broadcasting wardrobe update to extension pages');
   
-  // First, broadcast via runtime messaging for popup or other non-tab contexts
-  chrome.runtime.sendMessage({
-    action: 'wardrobeUpdated',
-    wardrobe: wardrobe
-  });
+  // First via runtime messaging for popup
+  try {
+    chrome.runtime.sendMessage({
+      action: 'wardrobeUpdated',
+      wardrobe: updatedWardrobe
+    }).catch(error => {
+      // This is normal - just means no listeners
+      console.log('No listeners for wardrobeUpdated message');
+    });
+  } catch (e) {
+    // Ignore errors - expected if no listeners
+  }
   
-  // Then, find all extension tabs and send updates
+  // Then find any extension tabs to update
   chrome.tabs.query({}, (tabs) => {
     const extensionUrls = [
       chrome.runtime.getURL('fullpage.html'),
@@ -1234,13 +1408,12 @@ function broadcastWardrobeUpdate(wardrobe) {
         try {
           chrome.tabs.sendMessage(tab.id, {
             action: 'wardrobeUpdated',
-            wardrobe: wardrobe
-          }).catch(error => {
-            // Ignore errors when sending messages to extension pages
-            console.log('Could not send update to tab', tab.id);
+            wardrobe: updatedWardrobe
+          }).catch(() => {
+            // Ignore errors for individual tabs
           });
         } catch (e) {
-          // Ignore errors
+          // Ignore any errors
         }
       }
     });
