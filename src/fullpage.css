@@ -1252,8 +1252,9 @@ header {
   transition: background-color 0.3s ease;
   font-family: 'Vogue', serif;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 300;
   border-radius: 0;
+  width: 120px;
 }
 
 .styler-button:hover {
