@@ -6,7 +6,7 @@ chrome.runtime.onInstalled.addListener(() => {
   // Create context menu for right-clicking on images
   chrome.contextMenus.create({
     id: "addToVirtualCloset",
-    title: "Add to Virtual Closet",
+    title: "Add to FITD closet",
     contexts: ["image"]
   });
   
@@ -35,9 +35,34 @@ chrome.runtime.onInstalled.addListener(() => {
         }
       });
     }
-    
-    // Note: We don't set a default API key as it should be user-provided
-    // or securely stored by the developer
+  });
+  // Initialize outfit storage for consistency
+  chrome.storage.local.get(['outfits', 'savedOutfits'], (data) => {
+    // If old 'outfits' key exists but 'savedOutfits' doesn't, migrate the data
+    if (data.outfits && data.outfits.length > 0 && (!data.savedOutfits || data.savedOutfits.length === 0)) {
+      console.log('Migrating outfits to new storage key');
+      chrome.storage.local.set({ savedOutfits: data.outfits }, () => {
+        console.log('Migration complete');
+      });
+    } 
+    // If both exist, merge them with savedOutfits taking precedence
+    else if (data.outfits && data.outfits.length > 0 && data.savedOutfits && data.savedOutfits.length > 0) {
+      console.log('Merging outfit storage keys');
+      
+      // Create a map of existing outfit IDs to avoid duplicates
+      const existingIds = new Set(data.savedOutfits.map(outfit => outfit.id));
+      
+      // Filter outfits that aren't already in savedOutfits
+      const uniqueOldOutfits = data.outfits.filter(outfit => !existingIds.has(outfit.id));
+      
+      // Merge the arrays with savedOutfits first
+      const mergedOutfits = [...data.savedOutfits, ...uniqueOldOutfits];
+      
+      // Save the merged array back to storage
+      chrome.storage.local.set({ savedOutfits: mergedOutfits }, () => {
+        console.log('Outfits merged successfully');
+      });
+    }
   });
 });
 
@@ -634,7 +659,73 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Handle OpenAI API request for product extraction
     handleProductExtractionRequest(message, sendResponse);
     return true; // Will respond asynchronously
+  } 
+  else if (message.action === 'outfitSaved') {
+    // Forward the message to all open tabs
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        // Don't send back to the original sender
+        if (sender.tab && sender.tab.id === tab.id) return;
+        
+        // Check if this is a virtual closet tab
+        const extensionUrls = [
+          chrome.runtime.getURL('fullpage.html'),
+          chrome.runtime.getURL('category-selector.html'),
+          chrome.runtime.getURL('styler.html')
+        ];
+        
+        if (tab.url && extensionUrls.some(url => tab.url.startsWith(url))) {
+          try {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'outfitSaved',
+              outfits: message.outfits
+            }).catch(() => {
+              // Ignore errors for individual tabs
+            });
+          } catch (e) {
+            // Ignore any errors
+          }
+        }
+      });
+    });
+    
+    sendResponse({ success: true });
+    return true;
   }
+  else if (message.action === 'outfitDeleted') {
+    // Forward the deletion to all open tabs
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        // Don't send back to the original sender
+        if (sender.tab && sender.tab.id === tab.id) return;
+        
+        // Check if this is a virtual closet tab
+        const extensionUrls = [
+          chrome.runtime.getURL('fullpage.html'),
+          chrome.runtime.getURL('category-selector.html'),
+          chrome.runtime.getURL('styler.html')
+        ];
+        
+        if (tab.url && extensionUrls.some(url => tab.url.startsWith(url))) {
+          try {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'outfitDeleted',
+              outfits: message.outfits
+            }).catch(() => {
+              // Ignore errors for individual tabs
+            });
+          } catch (e) {
+            // Ignore any errors
+          }
+        }
+      });
+    });
+    
+    sendResponse({ success: true });
+    return true;
+  }
+  // Return false if the message wasn't handled
+  return false;
 });
 
 // Function to extract product info using the server-side API

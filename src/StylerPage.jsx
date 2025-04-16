@@ -19,6 +19,12 @@ const StylerPage = () => {
   const [loading, setLoading] = useState(true);
   // State to track if dresses/jumpsuits is selected
   const [hasDresses, setHasDresses] = useState(false);
+  // State for saving feedback
+  const [saveFeedback, setSaveFeedback] = useState({
+    show: false,
+    message: '',
+    type: 'success' // or 'error'
+  });
 
   // Load data on component mount
   useEffect(() => {
@@ -150,45 +156,115 @@ const StylerPage = () => {
     return filteredItems[category][nextIndex];
   };
 
-  // Save the current outfit
+  // Save the current outfit - IMPROVED VERSION
   const saveOutfit = () => {
-    const outfitItems = {};
-    
     // Collect the current item from each category
+    const outfitItems = {};
+    let hasItems = false;
+    
     selectedCategories.forEach(category => {
       const currentItem = getCurrentItem(category);
       if (currentItem) {
         outfitItems[category] = currentItem;
+        hasItems = true;
       }
     });
     
     // Check if we have at least one item
-    if (Object.keys(outfitItems).length === 0) {
-      alert('Please select at least one item for your outfit.');
+    if (!hasItems) {
+      setSaveFeedback({
+        show: true,
+        message: 'Please select at least one item for your outfit.',
+        type: 'error'
+      });
+      
+      // Hide feedback after 3 seconds
+      setTimeout(() => {
+        setSaveFeedback({ show: false, message: '', type: 'success' });
+      }, 3000);
+      
       return;
     }
 
+    // Create the outfit object with a consistent structure
     const newOutfit = {
-      id: Date.now().toString(),
-      name: outfitName || 'Unnamed Outfit',
+      id: 'outfit_' + Date.now(), // Generate a unique ID
+      name: outfitName || 'My Outfit',
       items: outfitItems,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // Additional metadata to help with debugging
+      source: 'styler-page',
+      version: '1.0'
     };
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(['outfits'], (data) => {
-        const existingOutfits = data.outfits || [];
-        const updatedOutfits = [...existingOutfits, newOutfit];
+      // ALWAYS use 'savedOutfits' as the consistent storage key
+      chrome.storage.local.get('savedOutfits', (data) => {
+        const existingOutfits = data.savedOutfits || [];
+        console.log('Existing outfits:', existingOutfits.length);
         
-        chrome.storage.local.set({ outfits: updatedOutfits }, () => {
-          alert('Outfit saved successfully!');
+        // Add the new outfit to the beginning of the array
+        const updatedOutfits = [newOutfit, ...existingOutfits];
+        
+        // Save back to storage
+        chrome.storage.local.set({ savedOutfits: updatedOutfits }, () => {
+          console.log('Outfit saved successfully!', newOutfit);
+          
+          // Show success feedback
+          setSaveFeedback({
+            show: true,
+            message: 'Outfit saved successfully!',
+            type: 'success'
+          });
+          
+          // Hide feedback after 3 seconds
+          setTimeout(() => {
+            setSaveFeedback({ show: false, message: '', type: 'success' });
+          }, 3000);
+          
+          // Update the local state
           setOutfits(updatedOutfits);
+          
+          // Also try to update any open fullpage views via message passing
+          try {
+            chrome.runtime.sendMessage({
+              action: 'outfitSaved',
+              outfits: updatedOutfits
+            });
+          } catch (e) {
+            console.log('Could not notify other views of outfit save:', e);
+          }
+          
+          // Show a notification
+          try {
+            chrome.notifications.create({
+              type: 'basic',
+              iconUrl: '/logo.png',
+              title: 'Outfit Saved',
+              message: `"${newOutfit.name}" has been added to your outfits collection!`
+            });
+          } catch (e) {
+            console.log('Notification API not available:', e);
+          }
         });
       });
     } else {
-      // For development
-      alert('Outfit saved successfully! (Development mode)');
-      setOutfits([...outfits, newOutfit]);
+      // For development outside extension
+      console.log('Saving outfit in development mode:', newOutfit);
+      const updatedOutfits = [newOutfit, ...outfits];
+      setOutfits(updatedOutfits);
+      
+      // Show success feedback
+      setSaveFeedback({
+        show: true,
+        message: 'Outfit saved successfully! (Development Mode)',
+        type: 'success'
+      });
+      
+      // Hide feedback after 3 seconds
+      setTimeout(() => {
+        setSaveFeedback({ show: false, message: '', type: 'success' });
+      }, 3000);
     }
   };
 
@@ -405,6 +481,17 @@ const StylerPage = () => {
     }
   };
 
+  // Feedback toast component
+  const FeedbackToast = ({ show, message, type }) => {
+    if (!show) return null;
+    
+    return (
+      <div className={`feedback-toast ${type}`}>
+        {message}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="styler-page loading">
@@ -465,6 +552,13 @@ const StylerPage = () => {
           </button>
         </div>
         
+        {/* Feedback Toast */}
+        <FeedbackToast 
+          show={saveFeedback.show}
+          message={saveFeedback.message}
+          type={saveFeedback.type}
+        />
+        
         {/* AI Chat Component */}
         <AIChat 
             onOutfitGenerated={handleOutfitGenerated}
@@ -472,6 +566,39 @@ const StylerPage = () => {
             selectedCategories={selectedCategories}
         />
       </main>
+
+      {/* Add CSS for feedback toast */}
+      <style jsx>{`
+        .feedback-toast {
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 12px 24px;
+          border-radius: 4px;
+          color: white;
+          font-family: Helvetica, Arial, sans-serif;
+          font-size: 14px;
+          z-index: 1000;
+          animation: fadeInOut 3s ease-in-out forwards;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .feedback-toast.success {
+          background-color: #4caf50;
+        }
+        
+        .feedback-toast.error {
+          background-color: #f44336;
+        }
+        
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translate(-50%, 20px); }
+          10% { opacity: 1; transform: translate(-50%, 0); }
+          90% { opacity: 1; transform: translate(-50%, 0); }
+          100% { opacity: 0; transform: translate(-50%, 20px); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -42,8 +42,29 @@ function VirtualClosetFullPage() {
         setShowOutfitCreator(true);
       }
     }
+    
     loadWardrobe();
     loadOutfits();
+    
+    // Add message listener for outfit updates from styler page
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      const messageListener = (message, sender, sendResponse) => {
+        if (message.action === 'outfitSaved' && message.outfits) {
+          console.log('Received outfit update from Styler page');
+          setOutfits(message.outfits);
+          sendResponse({ success: true });
+          return true;
+        }
+        return false;
+      };
+      
+      chrome.runtime.onMessage.addListener(messageListener);
+      
+      // Clean up listener when component unmounts
+      return () => {
+        chrome.runtime.onMessage.removeListener(messageListener);
+      };
+    }
   }, []);
 
   // Filter and sort
@@ -122,20 +143,11 @@ const handleSortOptionClick = (option) => {
   // Load outfits from Chrome storage
   const loadOutfits = () => {
     if (chrome.storage && chrome.storage.local) {
-      // Try to load from both possible storage keys
-      chrome.storage.local.get(['outfits', 'savedOutfits'], (data) => {
-        // Check if outfits exist in either location
-        if (data.savedOutfits && data.savedOutfits.length > 0) {
+      // ALWAYS use 'savedOutfits' as the storage key
+      chrome.storage.local.get('savedOutfits', (data) => {
+        if (data.savedOutfits && Array.isArray(data.savedOutfits)) {
+          console.log('Loaded outfits:', data.savedOutfits.length);
           setOutfits(data.savedOutfits);
-          console.log('Loaded outfits from savedOutfits key:', data.savedOutfits.length);
-        } else if (data.outfits && data.outfits.length > 0) {
-          setOutfits(data.outfits);
-          console.log('Loaded outfits from outfits key:', data.outfits.length);
-          
-          // Optionally migrate the data to the new key
-          chrome.storage.local.set({ savedOutfits: data.outfits }, () => {
-            console.log('Migrated outfits to new storage key');
-          });
         } else {
           console.log('No outfits found in storage');
           setOutfits([]);
@@ -355,8 +367,21 @@ const handleSortOptionClick = (option) => {
       const updatedOutfits = outfits.filter(outfit => outfit.id !== outfitId);
       
       if (chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ savedOutfits: updatedOutfits }, () => {
+        // Update BOTH storage keys to ensure consistency
+        chrome.storage.local.set({ 
+          savedOutfits: updatedOutfits,
+          outfits: updatedOutfits  // Also update the legacy key
+        }, () => {
           setOutfits(updatedOutfits);
+          
+          // Broadcast the deletion to all tabs
+          if (chrome.runtime) {
+            chrome.runtime.sendMessage({
+              action: 'outfitDeleted',
+              outfits: updatedOutfits
+            });
+          }
+          
           // Close details modal if the deleted outfit was selected
           if (selectedOutfit && selectedOutfit.id === outfitId) {
             closeOutfitDetails();
@@ -458,6 +483,18 @@ const handleSortOptionClick = (option) => {
               </div>
             ));
 
+          // Determine the layout class based on number of items
+          const itemCount = outfitItems.length;
+          let layoutClass = '';
+          
+          if (itemCount === 1) {
+            layoutClass = 'single-item';
+          } else if (itemCount === 2) {
+            layoutClass = 'two-items';
+          } else if (itemCount <= 4) {
+            layoutClass = 'few-items';
+          }
+
           return (
             <div 
               className="outfit-card" 
@@ -467,19 +504,8 @@ const handleSortOptionClick = (option) => {
               <div className="outfit-name">
                 <h3>{outfit.name}</h3>
               </div>
-              <div className="outfit-items-grid">
+              <div className={`outfit-items-grid ${layoutClass}`}>
                 {outfitItems}
-              </div>
-              <div className="outfit-footer">
-                <span className="outfit-created-date">{new Date(outfit.createdAt).toLocaleDateString()}</span>
-                <button className="icon-button delete-outfit" onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering the card click
-                  deleteOutfit(outfit.id);
-                }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                  </svg>
-                </button>
               </div>
             </div>
           );
@@ -497,7 +523,7 @@ const handleSortOptionClick = (option) => {
         
         <div className="add-method-card">
           <h3>Right-Click on Images</h3>
-          <p>When browsing shopping websites, right-click on any clothing image and select "Add to Virtual Closet" from the context menu.</p>
+          <p>When browsing shopping websites, right-click on any clothing image and select "Add to FITD cloest" from the context menu.</p>
         </div>
       </div>
     );
