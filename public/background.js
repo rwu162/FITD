@@ -3,68 +3,147 @@ console.log('Virtual Closet background script loaded');
 
 // Create context menu and browser action when extension is installed
 chrome.runtime.onInstalled.addListener(() => {
-  // Create context menu for right-clicking on images
-  chrome.contextMenus.create({
-    id: "addToVirtualCloset",
-    title: "Add to FITD closet",
-    contexts: ["image"]
-  });
-  
-  // Create browser action button
-  chrome.action.onClicked.addListener(() => {
-    // When the extension icon is clicked (not the popup), open the full page
-    openFullPage({ isFromPopup: true });
-  });
-  
-  // Initialize settings if they don't exist
-  chrome.storage.local.get(['openai_api_key', 'ai_outfit_settings', 'ai_extraction_settings'], (data) => {
-    if (!data.ai_outfit_settings) {
-      chrome.storage.local.set({
-        ai_outfit_settings: {
-          enabled: true,
-          model: 'gpt-3.5-turbo'
-        }
-      });
-    }
+  try {
+    fastStartup();
+    setupHeartbeat();
+    // Create context menu for right-clicking on images
+    chrome.contextMenus.create({
+      id: "addToVirtualCloset",
+      title: "Add to FITD closet",
+      contexts: ["image"]
+    });
     
-    if (!data.ai_extraction_settings) {
-      chrome.storage.local.set({
-        ai_extraction_settings: {
-          enabled: true,
-          model: 'gpt-3.5-turbo'
-        }
+    // Create browser action button
+    chrome.action.onClicked.addListener(() => {
+      // When the extension icon is clicked (not the popup), open the full page
+      openFullPage({ isFromPopup: true });
+    });
+    
+    // Initialize settings if they don't exist
+    chrome.storage.local.get(['openai_api_key', 'ai_outfit_settings', 'ai_extraction_settings'], (data) => {
+      if (!data.ai_outfit_settings) {
+        chrome.storage.local.set({
+          ai_outfit_settings: {
+            enabled: true,
+            model: 'gpt-3.5-turbo'
+          }
+        });
+      }
+      
+      if (!data.ai_extraction_settings) {
+        chrome.storage.local.set({
+          ai_extraction_settings: {
+            enabled: true,
+            model: 'gpt-3.5-turbo'
+          }
+        });
+      }
+    });
+    
+    // Initialize outfit storage for consistency
+    chrome.storage.local.get(['outfits', 'savedOutfits'], (data) => {
+      // If old 'outfits' key exists but 'savedOutfits' doesn't, migrate the data
+      if (data.outfits && data.outfits.length > 0 && (!data.savedOutfits || data.savedOutfits.length === 0)) {
+        console.log('Migrating outfits to new storage key');
+        chrome.storage.local.set({ savedOutfits: data.outfits }, () => {
+          console.log('Migration complete');
+        });
+      } 
+      // If both exist, merge them with savedOutfits taking precedence
+      else if (data.outfits && data.outfits.length > 0 && data.savedOutfits && data.savedOutfits.length > 0) {
+        console.log('Merging outfit storage keys');
+        
+        // Create a map of existing outfit IDs to avoid duplicates
+        const existingIds = new Set(data.savedOutfits.map(outfit => outfit.id));
+        
+        // Filter outfits that aren't already in savedOutfits
+        const uniqueOldOutfits = data.outfits.filter(outfit => !existingIds.has(outfit.id));
+        
+        // Merge the arrays with savedOutfits first
+        const mergedOutfits = [...data.savedOutfits, ...uniqueOldOutfits];
+        
+        // Save the merged array back to storage
+        chrome.storage.local.set({ savedOutfits: mergedOutfits }, () => {
+          console.log('Outfits merged successfully');
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error during extension initialization:', error);
+    
+    // Still try to create the most essential features even if other parts failed
+    try {
+      chrome.contextMenus.create({
+        id: "addToVirtualCloset",
+        title: "Add to FITD closet",
+        contexts: ["image"]
       });
+    } catch (menuError) {
+      console.error('Failed to create context menu:', menuError);
     }
-  });
-  // Initialize outfit storage for consistency
-  chrome.storage.local.get(['outfits', 'savedOutfits'], (data) => {
-    // If old 'outfits' key exists but 'savedOutfits' doesn't, migrate the data
-    if (data.outfits && data.outfits.length > 0 && (!data.savedOutfits || data.savedOutfits.length === 0)) {
-      console.log('Migrating outfits to new storage key');
-      chrome.storage.local.set({ savedOutfits: data.outfits }, () => {
-        console.log('Migration complete');
-      });
-    } 
-    // If both exist, merge them with savedOutfits taking precedence
-    else if (data.outfits && data.outfits.length > 0 && data.savedOutfits && data.savedOutfits.length > 0) {
-      console.log('Merging outfit storage keys');
-      
-      // Create a map of existing outfit IDs to avoid duplicates
-      const existingIds = new Set(data.savedOutfits.map(outfit => outfit.id));
-      
-      // Filter outfits that aren't already in savedOutfits
-      const uniqueOldOutfits = data.outfits.filter(outfit => !existingIds.has(outfit.id));
-      
-      // Merge the arrays with savedOutfits first
-      const mergedOutfits = [...data.savedOutfits, ...uniqueOldOutfits];
-      
-      // Save the merged array back to storage
-      chrome.storage.local.set({ savedOutfits: mergedOutfits }, () => {
-        console.log('Outfits merged successfully');
-      });
-    }
-  });
+  }
 });
+
+function fastStartup() {
+  console.time('Extension startup');
+  
+  // Preload commonly used resources
+  const preloadResources = [
+    'logo.png',
+    'content.js'
+  ];
+  
+  for (const resource of preloadResources) {
+    try {
+      chrome.runtime.getURL(resource);
+    } catch (e) {
+      console.error('Error preloading resource:', resource, e);
+    }
+  }
+  
+  // Predefine context menus immediately (don't wait for async operations)
+  setupContextMenus();
+  
+  console.timeEnd('Extension startup');
+}
+
+// Setup context menus as a separate function for faster execution
+function setupContextMenus() {
+  // chrome.contextMenus.create({
+  //   id: "addToVirtualCloset",
+  //   title: "Add to Virtual Closet",
+  //   contexts: ["image"]
+  // });
+}
+// Keep the extension active with a heartbeat
+function setupHeartbeat() {
+  // Initial heartbeat
+  heartbeat();
+  
+  // Set up periodic heartbeat
+  setInterval(heartbeat, 25 * 60 * 1000); // 25 minutes
+}
+
+function heartbeat() {
+  console.log("Extension heartbeat: ", new Date().toISOString());
+  
+  // Do minimal work to keep the extension responsive
+  // For example, check if any tabs need content script refreshing
+  chrome.tabs.query({}, tabs => {
+    console.log(`Heartbeat checking ${tabs.length} tabs`);
+  });
+}
+
+// Maintain a register of active tabs and when scripts were last injected
+const tabRegistry = {};
+
+// Function to determine if a tab needs script reinjection
+function needsReinjection(tabId) {
+  const now = Date.now();
+  const lastInjection = tabRegistry[tabId]?.lastInjection || 0;
+  // Reinject if it's been more than 5 minutes
+  return (now - lastInjection) > 5 * 60 * 1000;
+}
 
 // Function to open the extension as a full page
 function openFullPage(options = {}) {
@@ -137,76 +216,106 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "addToVirtualCloset") {
     console.log("Context menu item clicked");
     
-    // Get the image URL that was right-clicked
-    const imageUrl = info.srcUrl;
-    
-    if (imageUrl) {
-      // Show immediate notification
-      try {
-        chrome.notifications.create({
-          type: 'basic',
-          iconUrl: chrome.runtime.getURL('logo.png') || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFeAKJJ0W65QAAAABJRU5ErkJggg==',
-          title: 'Virtual Closet',
-          message: 'Processing item...'
-        });
-      } catch (e) {
-        console.error('Notification error:', e);
-      }
-      
-      // Create a basic product info object with what we know for sure
-      const basicProductInfo = {
-        title: tab.title || 'Unknown Product',
-        imageUrl: imageUrl,
-        url: tab.url,
-        timestamp: new Date().toISOString()
-      };
-      
-      // First ensure content script is active before extracting info
-      ensureContentScriptActive(tab.id)
-        .then(() => {
-          // Now proceed with your existing extraction logic
-          extractPageContent(tab, imageUrl, basicProductInfo);
-        })
-        .catch(error => {
-          console.warn('Failed to ensure content script, proceeding anyway:', error);
-          // Try extraction anyway - it might still work if the error was just a timeout
-          extractPageContent(tab, imageUrl, basicProductInfo);
-        });
+    // Show immediate notification
+    try {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('logo.png') || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFeAKJJ0W65QAAAABJRU5ErkJggg==',
+        title: 'Virtual Closet',
+        message: 'Processing item...'
+      });
+    } catch (e) {
+      console.error('Notification error:', e);
     }
+    
+    // Create a basic product info object 
+    const basicProductInfo = {
+      title: tab.title || 'Unknown Product',
+      imageUrl: info.srcUrl,
+      url: tab.url,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Always ensure content script is fresh before proceeding
+    ensureContentScript(tab)
+      .then(() => {
+        console.log("Content script verified, extracting page content...");
+        extractPageContent(tab, info.srcUrl, basicProductInfo);
+      })
+      .catch(error => {
+        console.warn("Could not verify content script, trying direct extraction:", error);
+        // Try without content script verification as a last resort
+        extractPageContent(tab, info.srcUrl, basicProductInfo);
+      });
   }
 });
 
 // New function to ensure content script is active
-function ensureContentScriptActive(tabId) {
+function ensureContentScript(tab) {
   return new Promise((resolve, reject) => {
+    // Skip if the tab isn't valid
+    if (!tab || !tab.id) {
+      reject(new Error("Invalid tab"));
+      return;
+    }
+    
+    // First check if the tab needs reinjection by time
+    if (needsReinjection(tab.id)) {
+      console.log(`Tab ${tab.id} hasn't been injected recently, injecting...`);
+      injectContentScript(tab.id)
+        .then(() => resolve())
+        .catch(reject);
+      return;
+    }
+    
     // Try to ping the content script
-    chrome.tabs.sendMessage(tabId, { action: 'ping' }, response => {
-      // If we get a response, the script is active
+    chrome.tabs.sendMessage(tab.id, { action: 'ping' }, response => {
       if (chrome.runtime.lastError) {
-        console.log('Content script not responding:', chrome.runtime.lastError.message);
-      } else if (response && response.status === 'pong') {
-        console.log('Content script is active');
+        console.log(`Content script not responding in tab ${tab.id}, injecting...`);
+        injectContentScript(tab.id)
+          .then(() => resolve())
+          .catch(reject);
+        return;
+      }
+      
+      if (response && response.status === 'pong') {
+        console.log(`Content script active in tab ${tab.id}`);
+        // Update the last successful ping time
+        tabRegistry[tab.id] = { lastInjection: Date.now() };
         resolve();
         return;
       }
       
-      // If no response or error, inject the content script again
-      console.log('Injecting content script again...');
-      chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        files: ['content.js']
-      }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('Error injecting content script:', chrome.runtime.lastError);
-          reject(chrome.runtime.lastError);
-          return;
-        }
-        
-        // Give it a moment to initialize
-        setTimeout(() => {
-          resolve();
-        }, 300);
-      });
+      // If we got a response but not a pong, inject anyway
+      console.log(`Unknown response from tab ${tab.id}, injecting...`);
+      injectContentScript(tab.id)
+        .then(() => resolve())
+        .catch(reject);
+    });
+  });
+}
+
+function injectContentScript(tabId) {
+  return new Promise((resolve, reject) => {
+    console.log(`Injecting content script into tab ${tabId}...`);
+    
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content.js']
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Error injecting content script:', chrome.runtime.lastError);
+        reject(chrome.runtime.lastError);
+        return;
+      }
+      
+      // Register this injection
+      tabRegistry[tabId] = { lastInjection: Date.now() };
+      
+      // Give it a moment to initialize
+      setTimeout(() => {
+        resolve();
+      }, 300);
     });
   });
 }

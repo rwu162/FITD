@@ -614,15 +614,8 @@ const handleSortOptionClick = (option) => {
               
               <div className="detail-row full-width">
                 <span className="detail-label">Description:</span>
-                <p className="detail-value">{selectedItem.description || 'No description available.'}</p>
+                <p className="detail-value">{selectedItem.detailedDescription || 'No description available.'}</p>
               </div>
-              
-              {selectedItem.detailedDescription && (
-                <div className="detail-row full-width">
-                  <span className="detail-label">Detailed Description:</span>
-                  <p className="detail-value">{selectedItem.detailedDescription}</p>
-                </div>
-              )}
             </div>
           </div>
           
