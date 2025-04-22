@@ -90,6 +90,54 @@ const StylerPage = () => {
     }
   }, [selectedCategories, loading]);
 
+  useEffect(() => {
+    // Set up direct DOM access as a backup for the input field
+    const setupDirectAccess = () => {
+      try {
+        const inputElement = document.getElementById('outfit-name-input');
+        if (inputElement) {
+          // Add a direct input event listener
+          const handleDirectInput = (e) => {
+            try {
+              setOutfitName(e.target.value);
+            } catch (err) {
+              console.log('State update error:', err);
+              // The direct value will still be read in saveOutfit
+            }
+          };
+          
+          // Remove any existing listeners first
+          inputElement.removeEventListener('input', handleDirectInput);
+          // Add the new listener
+          inputElement.addEventListener('input', handleDirectInput);
+          
+          console.log('Direct DOM access for outfit name input setup');
+        }
+      } catch (err) {
+        console.log('Error setting up direct DOM access:', err);
+      }
+    };
+    
+    // Set up immediately
+    setupDirectAccess();
+    
+    // Try again after a short delay to ensure DOM is ready
+    const timer = setTimeout(setupDirectAccess, 500);
+    
+    return () => {
+      clearTimeout(timer);
+      try {
+        const inputElement = document.getElementById('outfit-name-input');
+        if (inputElement) {
+          // Clean up event listeners
+          inputElement.removeEventListener('input', () => {});
+        }
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    };
+  }, []);
+
   // Load wardrobe from Chrome storage
   const loadWardrobe = () => {
     setLoading(true);
@@ -158,6 +206,17 @@ const StylerPage = () => {
 
   // Save the current outfit - IMPROVED VERSION
   const saveOutfit = () => {
+    // Try to get the outfit name directly from the DOM element as a fallback
+    let finalOutfitName = outfitName || "My Outfit";
+    try {
+      const inputElement = document.getElementById('outfit-name-input');
+      if (inputElement && inputElement.value) {
+        finalOutfitName = inputElement.value;
+        console.log('Got outfit name from DOM:', finalOutfitName);
+      }
+    } catch (err) {
+      console.log('Error getting direct input value:', err);
+    }
     // Collect the current item from each category
     const outfitItems = {};
     let hasItems = false;
@@ -528,6 +587,8 @@ const StylerPage = () => {
             onChange={(e) => setOutfitName(e.target.value)}
             className="outfit-name-input"
             placeholder="Name your outfit"
+            disabled={false}
+            readOnly={false}
           />
         </div>
 

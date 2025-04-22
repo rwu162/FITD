@@ -161,57 +161,107 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         timestamp: new Date().toISOString()
       };
       
-      // First try to extract visible text from the page
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: getVisibleText
-      }, (results) => {
-        let pageText = '';
-        
-        if (!chrome.runtime.lastError && results && results[0]) {
-          pageText = results[0].result || '';
-          console.log('Successfully extracted text with length:', pageText.length);
-        } else {
-          console.warn('Error extracting text:', chrome.runtime.lastError);
-        }
-        
-        // Next extract detailed product info
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          function: extractPageInfoForProduct,
-          args: [imageUrl]
-        }, (infoResults) => {
-          // Check if we got page info successfully
-          if (chrome.runtime.lastError || !infoResults || !infoResults[0]) {
-            console.warn('Could not extract page info:', chrome.runtime.lastError);
-            // Process with just the text and basic info
-            processWithServerExtraction(basicProductInfo, pageText, imageUrl, tab.url);
-            return;
-          }
-          
-          // Get the extracted info
-          const extractedInfo = infoResults[0].result;
-          if (extractedInfo && typeof extractedInfo === 'object') {
-            console.log('Successfully extracted page info:', extractedInfo);
-            
-            // Merge with our basic info
-            const enrichedInfo = {
-              ...basicProductInfo,
-              ...extractedInfo
-            };
-            
-            // Process with the server using both detailed info and the extracted text
-            processWithServerExtraction(enrichedInfo, pageText, imageUrl, tab.url);
-          } else {
-            // If extraction failed, use the basic info and text
-            console.warn('Page info extraction returned invalid data');
-            processWithServerExtraction(basicProductInfo, pageText, imageUrl, tab.url);
-          }
+      // First ensure content script is active before extracting info
+      ensureContentScriptActive(tab.id)
+        .then(() => {
+          // Now proceed with your existing extraction logic
+          extractPageContent(tab, imageUrl, basicProductInfo);
+        })
+        .catch(error => {
+          console.warn('Failed to ensure content script, proceeding anyway:', error);
+          // Try extraction anyway - it might still work if the error was just a timeout
+          extractPageContent(tab, imageUrl, basicProductInfo);
         });
-      });
     }
   }
 });
+
+// New function to ensure content script is active
+function ensureContentScriptActive(tabId) {
+  return new Promise((resolve, reject) => {
+    // Try to ping the content script
+    chrome.tabs.sendMessage(tabId, { action: 'ping' }, response => {
+      // If we get a response, the script is active
+      if (chrome.runtime.lastError) {
+        console.log('Content script not responding:', chrome.runtime.lastError.message);
+      } else if (response && response.status === 'pong') {
+        console.log('Content script is active');
+        resolve();
+        return;
+      }
+      
+      // If no response or error, inject the content script again
+      console.log('Injecting content script again...');
+      chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        files: ['content.js']
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Error injecting content script:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        
+        // Give it a moment to initialize
+        setTimeout(() => {
+          resolve();
+        }, 300);
+      });
+    });
+  });
+}
+
+// Existing code moved to a separate function for clarity
+function extractPageContent(tab, imageUrl, basicProductInfo) {
+  // First try to extract visible text from the page
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: getVisibleText
+  }, (results) => {
+    let pageText = '';
+    
+    if (!chrome.runtime.lastError && results && results[0]) {
+      pageText = results[0].result || '';
+      console.log('Successfully extracted text with length:', pageText.length);
+    } else {
+      console.warn('Error extracting text:', chrome.runtime.lastError);
+    }
+    
+    // Next extract detailed product info
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: extractPageInfoForProduct,
+      args: [imageUrl]
+    }, (infoResults) => {
+      // Check if we got page info successfully
+      if (chrome.runtime.lastError || !infoResults || !infoResults[0]) {
+        console.warn('Could not extract page info:', chrome.runtime.lastError);
+        // Process with just the text and basic info
+        processWithServerExtraction(basicProductInfo, pageText, imageUrl, tab.url);
+        return;
+      }
+      
+      // Get the extracted info
+      const extractedInfo = infoResults[0].result;
+      if (extractedInfo && typeof extractedInfo === 'object') {
+        console.log('Successfully extracted page info:', extractedInfo);
+        
+        // Merge with our basic info
+        const enrichedInfo = {
+          ...basicProductInfo,
+          ...extractedInfo
+        };
+        
+        // Process with the server using both detailed info and the extracted text
+        processWithServerExtraction(enrichedInfo, pageText, imageUrl, tab.url);
+      } else {
+        // If extraction failed, use the basic info and text
+        console.warn('Page info extraction returned invalid data');
+        processWithServerExtraction(basicProductInfo, pageText, imageUrl, tab.url);
+      }
+    });
+  });
+}
 
 function processWithServerExtraction(productInfo, pageText, imageUrl, pageUrl) {
   // Now use our server API to extract more detailed product info

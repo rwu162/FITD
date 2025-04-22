@@ -204,6 +204,51 @@ section h2 {
   font-weight: 500;
 }
 
+.outfit-name-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin: 0 auto 20px;
+  display: block;
+  text-align: center;
+  font-family: inherit;
+  cursor: text; /* Important: shows text cursor */
+}
+
+.outfit-name-input:hover {
+  border-color: #999;
+}
+
+.outfit-name-input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2), inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+/* Add a subtle "editable" indicator */
+.outfit-name-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 20px;
+}
+
+.outfit-name-container::after {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #888;
+  pointer-events: none;
+}
+
 .outfit-items-grid {
   padding: 1rem;
 }

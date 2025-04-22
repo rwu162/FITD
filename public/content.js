@@ -23,7 +23,7 @@ function initializeContentScript() {
     
     if (message.action === 'ping') {
       console.log('Received ping, sending pong');
-      sendResponse({ status: 'pong', initialized: isInitialized });
+      sendResponse({ status: 'pong', initialized: true });
       return true;
     }
     

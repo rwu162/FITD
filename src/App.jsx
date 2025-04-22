@@ -93,7 +93,7 @@ function App() {
         
         <p>
           To add clothing items to your wardrobe, simply right-click on 
-          any clothing image while browsing and select "Add to FITD cloest" from the context menu.
+          any clothing image while browsing and select "Add to FITD closet" from the context menu.
         </p>
         
         <p>
