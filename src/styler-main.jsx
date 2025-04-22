@@ -1,9 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import './styler-page.css';
 import './index.css';
 import './fullpage.css';
 import './styling.css';
-import './styler-page.css';
 import StylerPage from './StylerPage';
 
 console.log('Styler Main Script Loaded');
