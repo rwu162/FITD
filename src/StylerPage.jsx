@@ -581,15 +581,26 @@ const StylerPage = () => {
 
       <main className="styler-content">
         <div className="outfit-name-container">
-          <input 
-            type="text" 
-            value={outfitName}
-            onChange={(e) => setOutfitName(e.target.value)}
-            className="outfit-name-input"
-            placeholder="Name your outfit"
-            disabled={false}
-            readOnly={false}
-          />
+        <input 
+          type="text" 
+          id="outfit-name-input"
+          value={outfitName}
+          onChange={(e) => setOutfitName(e.target.value)}
+          className="outfit-name-input"
+          placeholder="Name your outfit"
+          disabled={false}
+          readOnly={false}
+          style={{
+            // Inline styles as a fallback to ensure visibility
+            backgroundColor: 'white',
+            color: 'black',
+            border: '1px solid #000',
+            padding: '10px 15px',
+            width: '300px',
+            textAlign: 'center',
+            fontFamily: 'Helvetica, Arial, sans-serif'
+          }}
+        />
         </div>
 
         <div className={`outfit-display mannequin-layout ${orderedCategories.length === 1 ? 'single-category' : ''}`}>

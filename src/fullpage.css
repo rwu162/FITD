@@ -176,11 +176,24 @@ section.hidden {
 }
 
 .search-container input {
+  background-color: transparent;
+  color: #333;
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 0px;
   font-size: 1rem;
+}
+
+.search-container input:focus {
+  outline: none;
+  border-color: #A89354;
+  background-color: transparent; /* Maintain transparency on focus */
+}
+
+.search-container input::placeholder {
+  color: #999;
+  opacity: 1;
 }
 
 .filter-dropdown select {

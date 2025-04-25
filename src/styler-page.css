@@ -82,13 +82,19 @@ html, body {
     padding: 10px 15px;
     text-align: center;
     width: 300px;
-    background: transparent;
+    background: white;
+    color: black;
     font-family: Helvetica;
     font-size: 16px;
     font-style: normal;
     font-weight: 300;
     line-height: normal;
     letter-spacing: 0.25px;
+  }
+
+  .outfit-name-input:focus {
+    outline: none;
+    border-color: #666;
   }
   
   /* Outfit display layout */
@@ -725,6 +731,52 @@ html, body {
     height: 60px; /* Slightly increased to accommodate stacked links */
     border-bottom: none;
     position: relative; /* For absolute positioning of nav-links */
+  }
+
+  input.outfit-name-input,
+  .outfit-name-input,
+  #outfit-name-input {
+    /* Basic styling */
+    border: 1px solid #000 !important;
+    padding: 10px 15px !important;
+    text-align: center !important;
+    width: 300px !important;
+    font-family: Helvetica, Arial, sans-serif !important;
+    
+    /* Critical visibility properties */
+    background-color: white !important;
+    color: black !important;
+    
+    /* Font styling */
+    font-size: 16px !important;
+    font-style: normal !important;
+    font-weight: 300 !important;
+    line-height: normal !important;
+    letter-spacing: 0.25px !important;
+    
+    /* Ensure it's not transparent */
+    opacity: 1 !important;
+    
+    /* Remove any potential text-shadow that might hide text */
+    text-shadow: none !important;
+  }
+
+  /* Add specific focus state */
+  input.outfit-name-input:focus,
+  .outfit-name-input:focus,
+  #outfit-name-input:focus {
+    outline: none !important;
+    border-color: #666 !important;
+    background-color: white !important; /* Keep background white on focus */
+    color: black !important; /* Keep text black on focus */
+  }
+
+  /* Fix placeholder styling */
+  input.outfit-name-input::placeholder,
+  .outfit-name-input::placeholder,
+  #outfit-name-input::placeholder {
+    color: #666 !important;
+    opacity: 1 !important;
   }
 
   

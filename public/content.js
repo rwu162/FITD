@@ -4,11 +4,12 @@ console.log('Virtual Closet content script loaded');
 // Flag to track if the script is fully initialized
 let isInitialized = false;
 
+// Initialize the content script immediately
+initializeContentScript();
+
 // Flag to track if AI extractor is loaded
 let aiExtractorLoaded = false;
 
-// Initialize the content script immediately
-initializeContentScript();
 
 // Function to ensure proper initialization
 function initializeContentScript() {

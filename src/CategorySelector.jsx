@@ -141,24 +141,25 @@ const CategorySelector = () => {
         <p>Select all that may apply</p>
         
         <div className="category-grid">
-          {Object.entries(selectedCategories).map(([category, isSelected]) => (
-            <div 
-              key={category} 
-              className={`category-item ${isSelected ? 'selected' : ''}`}
-              onClick={() => toggleCategory(category)}
-            >
-              <label>
-                <input 
-                  type="checkbox" 
-                  checked={isSelected}
-                  onChange={() => toggleCategory(category)}
-                />
-                {category.toUpperCase()}
-                <span className="item-count">({getCategoryCount(category)} items)</span>
-              </label>
-            </div>
-          ))}
-        </div>
+        {Object.entries(selectedCategories).map(([category, isSelected]) => (
+          <div 
+            key={category} 
+            className={`category-item ${isSelected ? 'selected' : ''}`}
+            onClick={() => toggleCategory(category)}
+          >
+            <label onClick={(e) => e.stopPropagation()}>
+              <input 
+                type="checkbox" 
+                checked={isSelected}
+                onChange={() => toggleCategory(category)}
+                onClick={(e) => e.stopPropagation()}
+              />
+              {category.toUpperCase()}
+              <span className="item-count">({getCategoryCount(category)} items)</span>
+            </label>
+          </div>
+        ))}
+      </div>
         
         <button 
           className="next-button" 
