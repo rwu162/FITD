@@ -1,12 +1,41 @@
-# React + Vite
+# FITD - Smart Wardrobe Extension
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🏆 **Winner of Best Design at Convergent Spring 2025 Pitch Competition**
 
-Currently, two official plugins are available:
+FITD is a smart wardrobe Chrome extension that helps you create outfits from your favorite clothing items. Build your digital closet by adding items from any website and use AI-powered styling tools to create perfect outfits.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- **Add Items**: Right-click on any clothing image while browsing to add it to your wardrobe
+- **Digital Wardrobe**: Organize and view your collected clothing items by category
+- **AI Styler**: Create outfits using AI-powered recommendations
+- **Full Page View**: Expanded interface for better wardrobe management
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Installation
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Build the extension: `npm run build`
+4. Load the extension in Chrome from the `dist` folder
+
+## Development
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
+
+## Tech Stack
+
+- React 19
+- Vite
+- Chrome Extension Manifest v3
+- OpenAI API for AI styling features
+
+## Usage
+
+1. Install the extension in Chrome
+2. Browse clothing websites
+3. Right-click on clothing images and select "Add to FITD closet"
+4. Use the extension popup or full page view to manage your wardrobe
+5. Create outfits using the AI-powered styler
